@@ -19,8 +19,11 @@ class ScientificPapersDataModule(pl.LightningDataModule):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
     def preprocess_function(self, example):
-        processed_data = self.tokenizer(example["article"])
-        processed_data["labels"] = self.tokenizer(example["abstract"])["input_ids"]
+        processed_data = self.tokenizer(example["article"], return_tensors="pt")
+        processed_data["labels"] = self.tokenizer(
+            example["abstract"],
+            return_tensors="pt",
+        )["input_ids"]
         return processed_data
 
     def setup(self, stage=None):
