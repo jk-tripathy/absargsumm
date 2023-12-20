@@ -1,9 +1,9 @@
 import pytorch_lightning as pl
-from torch import nn, optim
-from transformers import AutoConfig
-
+import torch
 from models.components.base_model import BaseModel
 from models.components.gsum_decoder_layer import GSumDecoderLayer
+from torch import nn, optim
+from transformers import AutoConfig
 
 
 class GSum(pl.LightningModule):
@@ -14,21 +14,21 @@ class GSum(pl.LightningModule):
         self.base_model = BaseModel(model_name=args.model_name, frozen=args.frozen)
         self.base_config = AutoConfig.from_pretrained(args.model_name)
 
-        self.source_transformer = nn.TransformerEncoderLayer(
+        self.source_encoder = nn.TransformerEncoderLayer(
             self.base_config.hidden_size, self.base_config.num_attention_heads
         )
-        self.guidance_transformer = nn.TransformerEncoderLayer(
+        self.guidance_encoder = nn.TransformerEncoderLayer(
             self.base_config.hidden_size, self.base_config.num_attention_heads
         )
 
-        self.output_transformer = GSumDecoderLayer()
+        self.output_decoder = GSumDecoderLayer()
 
         self.linear = nn.Linear(self.base_config.hidden_size, self.base_config.vocab_size)
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=-1)
 
-        self.loss = nn.NLLLoss(ignore_index=0, reduction="sum")
+        self.loss = nn.NLLLoss()
 
-    def forward(self, input_ids, attention_mask, token_type_ids, labels):
+    def forward(self, input_ids, attention_mask, token_type_ids, target):
         input_data = {
             "input_ids": input_ids,
             "attention_mask": attention_mask,
@@ -36,16 +36,17 @@ class GSum(pl.LightningModule):
         }
 
         source_output = self.base_model(input_data)
-        source_output = self.source_transformer(source_output)
+        source_output = self.source_encoder(source_output)
 
         guidance_output = self.base_model(input_data)
-        guidance_output = self.guidance_transformer(guidance_output)
+        guidance_output = self.guidance_encoder(guidance_output)
 
-        output = self.output_transformer(source_output, guidance_output)
+        output = self.output_decoder(source_output, guidance_output)
         output = self.linear(output)
         output = self.softmax(output)
+        output = torch.argmax(output, dim=-1).to(torch.float32)
 
-        loss = self.loss(output, labels)
+        loss = self.loss(output.flatten(), target.flatten())
         return output, loss
 
     def training_step(self, batch, batch_idx):

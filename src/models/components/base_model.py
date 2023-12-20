@@ -13,8 +13,8 @@ class BaseModel(nn.Module):
 
     def forward(self, x):
         if not self.frozen:
-            logits = self.model(**x).logits
+            logits = self.model(**x).last_hidden_state
         else:
             with torch.no_grad():
-                logits = self.model(**x).logits
+                logits = self.model(**x).last_hidden_state
         return logits
