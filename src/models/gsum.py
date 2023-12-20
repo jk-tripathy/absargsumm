@@ -5,9 +5,11 @@ from torch import nn, optim
 
 
 class GSum(pl.LightningModule):
-    def __init__(self, model_name):
+    def __init__(self, args):
         super(GSum, self).__init__()
-        self.base_model = BaseModel(model_name)
+        self.args = args
+
+        self.base_model = BaseModel(model_name=args.model_name, frozen=args.frozen)
 
         self.source_transformer = nn.TransformerEncoderLayer()
         self.guidance_transformer = nn.TransformerEncoderLayer()
@@ -39,5 +41,5 @@ class GSum(pl.LightningModule):
         _ = self.forward(**batch)
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = optim.Adam(self.parameters(), lr=self.args.learning_rate)
         return optimizer

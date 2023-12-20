@@ -11,8 +11,18 @@ def parser():
         default="arxiv",
         help="Dataset variant of the Scientific Papers dataset. Choose between 'arxiv' and 'pubmed'",
     )
-    parser.add_argument("--batch_size", type=int, default=16, help="Batch size")
-    parser.add_argument("--num_workers", type=int, default=-1, help="Number of workers")
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=16,
+        help="Batch size. Defaults to 16.",
+    )
+    parser.add_argument(
+        "--num_workers",
+        type=int,
+        default=-1,
+        help="Number of workers. Defaults to -1.",
+    )
     parser.add_argument(
         "--stage",
         type=str,
@@ -23,7 +33,19 @@ def parser():
         "--model_name",
         type=str,
         default="bert-base-uncased",
-        help="Name of the model and tokenizer to use",
+        help="Name of the model and tokenizer to use. Defaults to 'bert-base-uncased'.",
+    )
+    parser.add_argument(
+        "--frozen",
+        type=bool,
+        default=True,
+        help="Whether to freeze the base model. Defaults to True.",
+    )
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        default=3e-4,
+        help="Learning rate. Defaults to 3e-4.",
     )
     parser.add_argument(
         "--dataset_limit",
