@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from transformer import AutoModel
+from transformers import AutoModel
 
 
 class BaseModel(nn.Module):
