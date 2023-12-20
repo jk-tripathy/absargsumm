@@ -17,11 +17,12 @@ def parser():
         default=16,
         help="Batch size. Defaults to 16.",
     )
+    # num_workers is broken and setting it to a positive value breaks the dataloader.
     parser.add_argument(
         "--num_workers",
         type=int,
-        default=-1,
-        help="Number of workers. Defaults to -1.",
+        default=0,
+        help="Number of workers. Defaults to 0.",
     )
     parser.add_argument(
         "--stage",
