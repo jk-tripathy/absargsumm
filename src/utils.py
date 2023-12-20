@@ -20,9 +20,15 @@ def parser():
         help="Stage of the pipeline. Can be 'fit', 'test', 'predict', 'dev'",
     )
     parser.add_argument(
-        "--tokenizer_name",
+        "--model_name",
         type=str,
         default="bert-base-uncased",
-        help="Tokenizer name",
+        help="Name of the model and tokenizer to use",
+    )
+    parser.add_argument(
+        "--dataset_limit",
+        type=int,
+        default=None,
+        help="Limit the number of samples in the dataset. Useful for debugging. Defaults to None.",
     )
     return parser.parse_args()
