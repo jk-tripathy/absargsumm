@@ -1,9 +1,52 @@
 from typing import Optional
 
 import pytorch_lightning as pl
+import torch
 from datasets import load_dataset
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer
+
+
+class ScientificPapersDataset(Dataset):
+    def __init__(self, dataset_variant: str, tokenizer_name: str, split: str):
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_name,
+            use_fast=True,
+        )
+        self.dataset = load_dataset(
+            "scientific_papers",
+            name=dataset_variant,
+            split=split,
+        )
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        example = self.dataset[idx]
+        processed_input = self.tokenizer.encode_plus(
+            example["article"],
+            padding="max_length",
+            truncation=True,
+            max_length=512,
+            return_tensors="pt",
+        )
+        processed_output = self.tokenizer.encode_plus(
+            example["abstract"],
+            padding="max_length",
+            truncation=True,
+            max_length=512,
+            return_tensors="pt",
+        )
+
+        processed_data = {
+            "input_ids": processed_input["input_ids"].flatten(),
+            "attention_mask": processed_input["attention_mask"].flatten(),
+            "token_type_ids": processed_input["token_type_ids"].flatten(),
+            "target": processed_output["input_ids"].flatten(),
+        }
+
+        return processed_data
 
 
 class ScientificPapersDataModule(pl.LightningDataModule):
@@ -13,26 +56,18 @@ class ScientificPapersDataModule(pl.LightningDataModule):
         batch_size: int,
         num_workers: int,
         tokenizer_name: str,
+        dataset_limit: Optional[int] = None,
     ):
         super().__init__()
         self.dataset_variant = dataset_variant
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-
-    def _preprocess_function(self, example):
-        processed_data = self.tokenizer(example["article"], padding=True, return_tensors="pt")
-        processed_data["labels"] = self.tokenizer(
-            example["abstract"],
-            padding=True,
-            return_tensors="pt",
-        )["input_ids"]
-        return processed_data
+        self.tokenizer_name = tokenizer_name
+        self.dataset_limit = dataset_limit
 
     def setup(
         self,
         stage: str,
-        dataset_limit: Optional[int] = None,
     ):
         """
         Setup the dataset for the given stage of the pipeline.
@@ -40,49 +75,39 @@ class ScientificPapersDataModule(pl.LightningDataModule):
             stage: Stage of the pipeline. Can be 'fit', 'test', 'predict'
             dataset_limit: Limit the number of samples in the dataset. Defaults to None.
         """
-        if dataset_limit is not None:
-            limit_length = f"[:{dataset_limit}]"
+        if self.dataset_limit is not None:
+            limit_length = f"[:{self.dataset_limit}]"
         else:
             limit_length = ""
 
         if stage == "fit" or stage is None:
-            self.train_dataset = load_dataset(
-                "scientific_papers", name=self.dataset_variant, split="train" + limit_length
+            self.train_dataset = ScientificPapersDataset(
+                dataset_variant=self.dataset_variant,
+                tokenizer_name=self.tokenizer_name,
+                split="train" + limit_length,
             )
-            self.train_dataset = self.train_dataset.map(
-                self._preprocess_function,
-                batched=True,
-                batch_size=self.batch_size,
-                remove_columns=["article", "abstract", "section_names"],
+            self.val_dataset = ScientificPapersDataset(
+                dataset_variant=self.dataset_variant,
+                tokenizer_name=self.tokenizer_name,
+                split="validation" + limit_length,
             )
-            self.val_dataset = load_dataset(
-                "scientific_papers", name=self.dataset_variant, split="validation" + limit_length
-            )
-            self.val_dataset = self.val_dataset.map(
-                self._preprocess_function,
-                batched=True,
-                batch_size=self.batch_size,
-                remove_columns=["article", "abstract", "section_names"],
+        elif stage == "validate":
+            self.val_dataset = ScientificPapersDataset(
+                dataset_variant=self.dataset_variant,
+                tokenizer_name=self.tokenizer_name,
+                split="validation" + limit_length,
             )
         elif stage == "test":
-            self.test_dataset = load_dataset(
-                "scientific_papers", name=self.dataset_variant, split="test" + limit_length
-            )
-            self.test_dataset = self.test_dataset.map(
-                self._preprocess_function,
-                batched=True,
-                batch_size=self.batch_size,
-                remove_columns=["article", "abstract", "section_names"],
+            self.test_dataset = ScientificPapersDataset(
+                dataset_variant=self.dataset_variant,
+                tokenizer_name=self.tokenizer_name,
+                split="test" + limit_length,
             )
         elif stage == "predict":
-            self.predict_dataset = load_dataset(
-                "scientific_papers", name=self.dataset_variant, split="test" + limit_length
-            )
-            self.predict_dataset = self.predict_dataset.map(
-                self._preprocess_function,
-                batched=True,
-                batch_size=self.batch_size,
-                remove_columns=["article", "abstract", "section_names"],
+            self.predict_dataset = ScientificPapersDataset(
+                dataset_variant=self.dataset_variant,
+                tokenizer_name=self.tokenizer_name,
+                split="test" + limit_length,
             )
 
     def train_dataloader(self):
