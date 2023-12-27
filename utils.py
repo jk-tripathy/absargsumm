@@ -27,7 +27,7 @@ def parser():
     parser.add_argument(
         "--stage",
         type=str,
-        default="dev",
+        default="fit",
         help="Stage of the pipeline. Can be 'fit', 'validate', 'test', 'predict'",
     )
     parser.add_argument(

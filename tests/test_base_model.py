@@ -35,24 +35,24 @@ def test_load(base_model):
 
 def test_output_shape(base_model, input_str, input_batch_str):
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", use_fast=True)
-    input_ids = tokenizer(
+    inputs = tokenizer(
         input_str,
         return_tensors="pt",
         padding="max_length",
         truncation=True,
         max_length=512,
     )
-    outputs = base_model(input_ids)
+    outputs = base_model(inputs)
     assert outputs.shape == (1, 512, 768)
 
-    input_ids = tokenizer(
+    inputs = tokenizer(
         input_batch_str,
         return_tensors="pt",
         padding="max_length",
         truncation=True,
         max_length=512,
     )
-    outputs = base_model(input_ids)
+    outputs = base_model(inputs)
     assert outputs.shape == (2, 512, 768)
 
 
