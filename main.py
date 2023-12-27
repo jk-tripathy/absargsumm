@@ -11,8 +11,8 @@ root = pyrootutils.setup_root(
 
 import pytorch_lightning as pl
 
-from data import ScientificPapersDataModule
-from models.gsum import GSum
+from data.scientific_papers import ScientificPapersDataModule
+from models.GSum.gsum_model import GSum
 from utils import parser
 
 

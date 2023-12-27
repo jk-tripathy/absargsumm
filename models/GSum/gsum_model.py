@@ -1,9 +1,10 @@
 import pytorch_lightning as pl
 import torch
-from models.components.base_model import BaseModel
-from models.components.gsum_decoder_layer import GSumDecoderLayer
 from torch import nn, optim
 from transformers import AutoConfig
+
+from models.base_model import BaseModel
+from models.GSum.gsum_decoder_layer import GSumDecoderLayer
 
 
 class GSum(pl.LightningModule):

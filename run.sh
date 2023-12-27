@@ -1,4 +1,4 @@
-python src/main.py \
+python main.py \
     --dataset_variant arxiv \
     --batch_size 4 \
     --stage fit \

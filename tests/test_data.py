@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.data import ScientificPapersDataModule
+from data.scientific_papers import ScientificPapersDataModule
 
 
 @pytest.fixture(scope="module", params=["arxiv", "pubmed"])
