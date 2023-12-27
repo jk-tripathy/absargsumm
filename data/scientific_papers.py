@@ -37,16 +37,15 @@ class ScientificPapersDataset(Dataset):
             truncation=True,
             max_length=512,
             return_tensors="pt",
-        )
+        )["input_ids"].flatten()
 
-        processed_data = {
+        processed_input_data = {
             "input_ids": processed_input["input_ids"].flatten(),
             "attention_mask": processed_input["attention_mask"].flatten(),
             "token_type_ids": processed_input["token_type_ids"].flatten(),
-            "target": processed_output["input_ids"].flatten(),
         }
 
-        return processed_data
+        return processed_input_data, processed_output
 
 
 class ScientificPapersDataModule(pl.LightningDataModule):
@@ -72,7 +71,7 @@ class ScientificPapersDataModule(pl.LightningDataModule):
         """
         Setup the dataset for the given stage of the pipeline.
         Args:
-            stage: Stage of the pipeline. Can be 'fit', 'test', 'predict'
+            stage: Stage of the pipeline. Can be 'fit', 'validate', 'test', 'predict'
             dataset_limit: Limit the number of samples in the dataset. Defaults to None.
         """
         if self.dataset_limit is not None:
