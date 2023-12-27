@@ -33,16 +33,16 @@ def test_dataset(datamodule, setup_stage):
     elif setup_stage == "predict":
         dataset = datamodule.predict_dataset
 
-    sample = dataset[0]
-    assert type(sample["input_ids"]) is torch.Tensor
-    assert type(sample["attention_mask"]) is torch.Tensor
-    assert type(sample["token_type_ids"]) is torch.Tensor
-    assert type(sample["target"]) is torch.Tensor
+    sample_input, sample_target = dataset[0]
+    assert type(sample_input["input_ids"]) is torch.Tensor
+    assert type(sample_input["attention_mask"]) is torch.Tensor
+    assert type(sample_input["token_type_ids"]) is torch.Tensor
+    assert type(sample_target) is torch.Tensor
 
-    assert sample["input_ids"].shape == torch.Size([512])
-    assert sample["attention_mask"].shape == torch.Size([512])
-    assert sample["token_type_ids"].shape == torch.Size([512])
-    assert sample["target"].shape == torch.Size([512])
+    assert sample_input["input_ids"].shape == torch.Size([512])
+    assert sample_input["attention_mask"].shape == torch.Size([512])
+    assert sample_input["token_type_ids"].shape == torch.Size([512])
+    assert sample_target.shape == torch.Size([512])
 
 
 @pytest.mark.parametrize("setup_stage", ["fit", "validate", "test", "predict"])
@@ -58,13 +58,14 @@ def test_dataloader(datamodule, setup_stage):
         dataloader = datamodule.predict_dataloader()
 
     batch_data = next(iter(dataloader))
+    inputs, targets = batch_data
 
-    assert type(batch_data["input_ids"]) is torch.Tensor
-    assert type(batch_data["attention_mask"]) is torch.Tensor
-    assert type(batch_data["token_type_ids"]) is torch.Tensor
-    assert type(batch_data["target"]) is torch.Tensor
+    assert type(inputs["input_ids"]) is torch.Tensor
+    assert type(inputs["attention_mask"]) is torch.Tensor
+    assert type(inputs["token_type_ids"]) is torch.Tensor
+    assert type(targets) is torch.Tensor
 
-    assert batch_data["input_ids"].shape == torch.Size([4, 512])
-    assert batch_data["attention_mask"].shape == torch.Size([4, 512])
-    assert batch_data["token_type_ids"].shape == torch.Size([4, 512])
-    assert batch_data["target"].shape == torch.Size([4, 512])
+    assert inputs["input_ids"].shape == torch.Size([4, 512])
+    assert inputs["attention_mask"].shape == torch.Size([4, 512])
+    assert inputs["token_type_ids"].shape == torch.Size([4, 512])
+    assert targets.shape == torch.Size([4, 512])
