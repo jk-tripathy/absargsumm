@@ -10,6 +10,9 @@ class BaseModel(nn.Module):
         self.model_name = model_name
         self.frozen = frozen
         self.model = AutoModel.from_pretrained(model_name)
+        if frozen:
+            for param in self.model.parameters():
+                param.requires_grad = False
 
     def forward(self, x):
         if not self.frozen:

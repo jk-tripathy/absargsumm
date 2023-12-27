@@ -24,14 +24,14 @@ class ScientificPapersDataset(Dataset):
 
     def __getitem__(self, idx):
         example = self.dataset[idx]
-        processed_input = self.tokenizer.encode_plus(
+        processed_input = self.tokenizer(
             example["article"],
             padding="max_length",
             truncation=True,
             max_length=512,
             return_tensors="pt",
         )
-        processed_output = self.tokenizer.encode_plus(
+        processed_output = self.tokenizer(
             example["abstract"],
             padding="max_length",
             truncation=True,
