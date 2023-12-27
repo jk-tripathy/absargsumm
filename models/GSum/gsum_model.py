@@ -16,10 +16,10 @@ class GSum(pl.LightningModule):
         self.base_config = AutoConfig.from_pretrained(args.model_name)
 
         self.source_transformer_layer = nn.TransformerEncoderLayer(
-            self.base_config.hidden_size, self.base_config.num_attention_heads
+            self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
         )
         self.guidance_transformer_layer = nn.TransformerEncoderLayer(
-            self.base_config.hidden_size, self.base_config.num_attention_heads
+            self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
         )
 
         self.output_decoder = GSumDecoderLayer()
