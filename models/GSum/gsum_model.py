@@ -15,6 +15,8 @@ class GSum(pl.LightningModule):
         self.base_model = BaseModel(model_name=args.model_name, frozen=args.frozen)
         self.base_config = AutoConfig.from_pretrained(args.model_name)
 
+        self.target_embed = nn.Embedding(self.base_config.vocab_size, self.base_config.hidden_size)
+
         self.source_transformer_layer = nn.TransformerEncoderLayer(
             self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
         )
@@ -22,31 +24,42 @@ class GSum(pl.LightningModule):
             self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
         )
 
-        self.output_decoder = GSumDecoderLayer()
+        self.output_decoder = GSumDecoderLayer(
+            self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
+        )
 
         self.linear = nn.Linear(self.base_config.hidden_size, self.base_config.vocab_size)
         self.softmax = nn.Softmax(dim=-1)
 
         self.loss = nn.NLLLoss()
 
-    def _source_encoder(self, input_data):
-        source_output = self.base_model(input_data)
-        source_output = self.source_transformer_layer(source_output)
-        return source_output
+    def _source_encoder(self, x):
+        x = self.base_model(x)
+        x = self.source_transformer_layer(x)
+        return x
 
-    def _guidance_encoder(self, input_data):
-        guidance_output = self.base_model(input_data)
-        guidance_output = self.guidance_transformer_layer(guidance_output)
-        return guidance_output
+    def _guidance_encoder(self, x):
+        x = self.base_model(x)
+        x = self.guidance_transformer_layer(x)
+        return x
 
     def forward(self, inputs, targets):
+        targt_embeded = self.target_embed(targets)
         source_output = self._source_encoder(inputs)
         guidance_output = self._guidance_encoder(inputs)
+        decoder_output = self.output_decoder(
+            source=source_output,
+            source_mask=None,
+            guidance=guidance_output,
+            guidance_mask=None,
+            target=targt_embeded,
+            target_mask=None,
+        )
 
-        output = self.output_decoder(source_output, guidance_output)
-        output = self.linear(output)
-        output = self.softmax(output)
-        output = torch.argmax(output, dim=-1).to(torch.float32)
+        x = self.linear(decoder_output)
+        x = self.softmax(x)
+
+        output = torch.argmax(x, dim=-1).to(torch.float32)
 
         loss = self.loss(output.flatten(), targets.flatten())
         return output, loss
