@@ -4,6 +4,7 @@ from torch import nn, optim
 from transformers import AutoConfig
 
 from models.base_model import BaseModel
+from models.GSum.gsum_decoder import GSumDecoder
 from models.GSum.gsum_decoder_layer import GSumDecoderLayer
 
 
@@ -24,9 +25,10 @@ class GSum(pl.LightningModule):
             self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
         )
 
-        self.output_decoder = GSumDecoderLayer(
+        self.output_decoder_layer = GSumDecoderLayer(
             self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
         )
+        self.output_decoder = GSumDecoder(self.output_decoder_layer, num_layers=12)
 
         self.linear = nn.Linear(self.base_config.hidden_size, self.base_config.vocab_size)
         self.softmax = nn.Softmax(dim=-1)

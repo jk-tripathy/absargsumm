@@ -18,6 +18,12 @@ class GSumDecoderLayer(nn.Module):
     ):
         super(GSumDecoderLayer, self).__init__()
 
+        self.d_model = d_model
+        self.nhead = nhead
+        self.dropout = dropout
+        self.dim_feedforward = dim_feedforward
+        self.batch_first = batch_first
+
         self.self_attn = MultiheadAttention(
             d_model, nhead, dropout=dropout, batch_first=batch_first
         )
