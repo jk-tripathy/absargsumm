@@ -69,7 +69,7 @@ def test_decoder(model, inputs, targets):
     guidance_output = model._guidance_encoder(inputs)
     target_embeded = model.target_embed(targets)
     output = model.output_decoder(
-        source_output,
+        source=source_output,
         source_mask=None,
         guidance=guidance_output,
         guidance_mask=None,

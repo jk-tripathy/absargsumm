@@ -21,16 +21,21 @@ class GSumDecoderLayer(nn.Module):
         self.self_attn = MultiheadAttention(
             d_model, nhead, dropout=dropout, batch_first=batch_first
         )
-        self.multihead_attn = MultiheadAttention(
+        self.first_multihead_attn = MultiheadAttention(
+            d_model, nhead, dropout=dropout, batch_first=batch_first
+        )
+        self.second_multihead_attn = MultiheadAttention(
             d_model, nhead, dropout=dropout, batch_first=batch_first
         )
 
         self.norm1 = LayerNorm(d_model)
         self.norm2 = LayerNorm(d_model)
         self.norm3 = LayerNorm(d_model)
+        self.norm4 = LayerNorm(d_model)
         self.dropout1 = Dropout(dropout)
         self.dropout2 = Dropout(dropout)
         self.dropout3 = Dropout(dropout)
+        self.dropout4 = Dropout(dropout)
 
         # Implementation of Feedforward model
         self.linear1 = Linear(d_model, dim_feedforward)
@@ -48,20 +53,30 @@ class GSumDecoderLayer(nn.Module):
         x = self.self_attn(x, x, x, attn_mask=attn_mask, need_weights=False)[0]
         return self.dropout1(x)
 
-    # multihead attention block
-    def _mha_block(
+    # first multihead attention block
+    def _first_mha_block(
         self,
         x: torch.Tensor,
         mem: torch.Tensor,
         attn_mask: torch.Tensor,
     ) -> torch.Tensor:
-        x = self.multihead_attn(x, mem, mem, attn_mask=attn_mask, need_weights=False)[0]
+        x = self.first_multihead_attn(x, mem, mem, attn_mask=attn_mask, need_weights=False)[0]
         return self.dropout2(x)
+
+    # first multihead attention block
+    def _second_mha_block(
+        self,
+        x: torch.Tensor,
+        mem: torch.Tensor,
+        attn_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        x = self.second_multihead_attn(x, mem, mem, attn_mask=attn_mask, need_weights=False)[0]
+        return self.dropout3(x)
 
     # feed forward block
     def _ff_block(self, x: torch.Tensor) -> torch.Tensor:
         x = self.linear2(self.dropout(self.activation(self.linear1(x))))
-        return self.dropout3(x)
+        return self.dropout4(x)
 
     def forward(
         self,
@@ -73,6 +88,7 @@ class GSumDecoderLayer(nn.Module):
         target_mask: torch.Tensor,
     ) -> torch.Tensor:
         x = self.norm1(target + self._sa_block(target, target_mask))
-        x = self.norm2(x + self._mha_block(target, source, source_mask))
-        x = self.norm3(x + self._ff_block(x))
+        x = self.norm2(x + self._first_mha_block(target, source, source_mask))
+        x = self.norm3(x + self._second_mha_block(target, source, source_mask))
+        x = self.norm4(x + self._ff_block(x))
         return x
