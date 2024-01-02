@@ -1,7 +1,6 @@
 from typing import Optional
 
 import pytorch_lightning as pl
-import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer
@@ -68,8 +67,8 @@ class ScientificPapersDataModule(pl.LightningDataModule):
         self,
         stage: str,
     ):
-        """
-        Setup the dataset for the given stage of the pipeline.
+        """Setup the dataset for the given stage of the pipeline.
+
         Args:
             stage: Stage of the pipeline. Can be 'fit', 'validate', 'test', 'predict'
             dataset_limit: Limit the number of samples in the dataset. Defaults to None.
