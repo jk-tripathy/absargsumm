@@ -10,6 +10,7 @@ root = pyrootutils.setup_root(
 )
 
 import pytest
+from transformers import BertTokenizer
 
 from utils.parser import parser
 
@@ -40,3 +41,43 @@ def test_parser_args(parser_args):
     assert parser_args.frozen is True
     assert parser_args.learning_rate == 3e-4
     assert parser_args.num_workers == 0
+
+
+@pytest.fixture
+def batch_str():
+    return [
+        "Hello, my dog is cute",
+        "Hello, my cat is also cute",
+    ]
+
+
+@pytest.fixture()
+def inputs(batch_str):
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", use_fast=True)
+    tokenized = tokenizer(
+        batch_str,
+        return_tensors="pt",
+        padding="max_length",
+        truncation=True,
+        max_length=512,
+    )
+    inputs = {
+        "input_ids": tokenized["input_ids"],
+        "attention_mask": tokenized["attention_mask"],
+        "token_type_ids": tokenized["token_type_ids"],
+    }
+    return inputs
+
+
+@pytest.fixture()
+def targets(batch_str):
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", use_fast=True)
+    tokenized = tokenizer(
+        batch_str,
+        return_tensors="pt",
+        padding="max_length",
+        truncation=True,
+        max_length=512,
+    )
+    target = tokenized["input_ids"]
+    return target
