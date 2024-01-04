@@ -19,14 +19,20 @@ class GSum(pl.LightningModule):
         self.target_embed = nn.Embedding(self.base_config.vocab_size, self.base_config.hidden_size)
 
         self.source_transformer_layer = nn.TransformerEncoderLayer(
-            self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
+            d_model=self.base_config.hidden_size,
+            nhead=self.base_config.num_attention_heads,
+            batch_first=args.batch_first,
         )
         self.guidance_transformer_layer = nn.TransformerEncoderLayer(
-            self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
+            d_model=self.base_config.hidden_size,
+            nhead=self.base_config.num_attention_heads,
+            batch_first=args.batch_first,
         )
 
         self.output_decoder_layer = GSumDecoderLayer(
-            self.base_config.hidden_size, self.base_config.num_attention_heads, batch_first=True
+            d_model=self.base_config.hidden_size,
+            nhead=self.base_config.num_attention_heads,
+            batch_first=args.batch_first,
         )
         self.output_decoder = GSumDecoder(self.output_decoder_layer, num_layers=12)
 
