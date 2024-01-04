@@ -54,4 +54,10 @@ def parser():
         default=None,
         help="Limit the number of samples in the dataset. Useful for debugging. Defaults to None.",
     )
+    parser.add_argument(
+        "--batch_first",
+        type=bool,
+        default=True,
+        help="Whether to freeze the base model. Defaults to True.",
+    )
     return parser.parse_args()
