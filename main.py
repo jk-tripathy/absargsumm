@@ -13,7 +13,7 @@ import pytorch_lightning as pl
 
 from data.scientific_papers import ScientificPapersDataModule
 from models.GSum.gsum_model import GSum
-from utils import parser
+from utils.parser import parser
 
 
 def train(args):

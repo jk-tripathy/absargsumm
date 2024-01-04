@@ -11,7 +11,7 @@ root = pyrootutils.setup_root(
 
 import pytest
 
-from utils import parser
+from utils.parser import parser
 
 
 @pytest.fixture()
