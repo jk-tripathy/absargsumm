@@ -13,7 +13,7 @@ def test_model(model):
     assert model is not None
 
 
-def test_forward(model, inputs, targets):
-    output, loss = model(inputs, targets)
-    assert output.shape == (2, 512)
+def test_forward(model, batch):
+    output, loss = model(**batch)
+    assert output.shape == (512, 30522)
     assert loss is not None

@@ -36,15 +36,14 @@ class ScientificPapersDataset(Dataset):
             truncation=True,
             max_length=512,
             return_tensors="pt",
-        )["input_ids"].flatten()
+        )
 
-        processed_input_data = {
-            "input_ids": processed_input["input_ids"].flatten(),
-            "attention_mask": processed_input["attention_mask"].flatten(),
-            "token_type_ids": processed_input["token_type_ids"].flatten(),
+        return {
+            "src": processed_input["input_ids"].flatten(),
+            "src_attn_mask": processed_input["attention_mask"].flatten(),
+            "tgt": processed_output["input_ids"].flatten(),
+            "tgt_attn_mask": processed_output["attention_mask"].flatten(),
         }
-
-        return processed_input_data, processed_output
 
 
 class ScientificPapersDataModule(pl.LightningDataModule):

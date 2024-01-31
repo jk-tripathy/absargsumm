@@ -31,29 +31,42 @@ class SimpleTransformer(pl.LightningModule):
         self.decoder = torch.nn.TransformerDecoder(self.decoder_layer, num_layers=12)
 
         self.linear = torch.nn.Linear(self.base_config.hidden_size, self.base_config.vocab_size)
-        self.softmax = torch.nn.Softmax(dim=-1)
 
-        self.loss = torch.nn.NLLLoss()
+        self.loss = torch.nn.CrossEntropyLoss()
 
-    def forward(self, inputs, targets):
-        inputs = self.encoder_embed(inputs["input_ids"])
-        outputs = self.decoder_embed(targets)
+    def generate_square_subsequent_mask(self, sz):
+        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = (
+            mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
+        )
+        return mask.bool()
 
-        inputs = self.encoder(inputs)
-        outputs = self.decoder(outputs, inputs)
+    def create_masks(self, src_attn_mask, tgt_attn_mask):
+        src_attn_mask = src_attn_mask.bool()
+        tgt_attn_mask = tgt_attn_mask.bool()
+        src_mask = src_attn_mask & self.generate_square_subsequent_mask(src_attn_mask.size(-1))
+        tgt_mask = tgt_attn_mask & self.generate_square_subsequent_mask(tgt_attn_mask.size(-1))
+        src_mask = src_mask.to(src_attn_mask.device)
+        tgt_mask = tgt_mask.to(tgt_attn_mask.device)
+        return src_mask, tgt_mask
 
-        outputs = self.linear(outputs)
-        outputs = self.softmax(outputs)
+    def forward(self, src, src_attn_mask, tgt, tgt_attn_mask):
+        src_mask, tgt_mask = self.create_masks(src_attn_mask, tgt_attn_mask)
 
-        outputs = torch.argmax(outputs, dim=-1).to(torch.float32)
+        src_embed_out = self.encoder_embed(src)
+        tgt_embed_out = self.decoder_embed(tgt)
+        enc_out = self.encoder(src_embed_out)
+        dec_out_logits = self.decoder(
+            tgt_embed_out, enc_out, tgt_mask=tgt_mask, memory_mask=src_mask
+        )
+        dec_out_logits = self.linear(dec_out_logits)
 
-        loss = self.loss(outputs.flatten(), targets.flatten())
+        loss = self.loss(dec_out_logits, tgt)
 
-        return outputs, loss
+        return dec_out_logits, loss
 
     def training_step(self, batch, batch_idx):
-        inputs, targets = batch
-        output, loss = self.forward(inputs, targets)
+        output, loss = self.forward(**batch)
         self.log("train_loss", loss, prog_bar=True, logger=True)
 
     def validation_step(self, batch, batch_idx):
