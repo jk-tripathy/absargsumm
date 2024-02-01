@@ -10,6 +10,7 @@ root = pyrootutils.setup_root(
 )
 
 import pytest
+import torch
 from transformers import BertTokenizer
 
 from utils.parser import parser
@@ -47,22 +48,37 @@ def test_parser_args(parser_args):
 def batch_str():
     return [
         "Hello, my dog is cute",
+        "Hello, my cat is also cute",
     ]
 
 
 @pytest.fixture()
 def batch(batch_str):
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", use_fast=True)
-    tokenized = tokenizer(
-        batch_str,
-        return_tensors="pt",
-        padding="max_length",
-        truncation=True,
-        max_length=512,
-    )
-    return {
-        "src": tokenized["input_ids"].flatten(),
-        "src_attn_mask": tokenized["attention_mask"].flatten(),
-        "tgt": tokenized["input_ids"].flatten(),
-        "tgt_attn_mask": tokenized["attention_mask"].flatten(),
+    data = {
+        "src": [],
+        "src_attn_mask": [],
+        "tgt": [],
+        "tgt_attn_mask": [],
     }
+    for str in batch_str:
+        tokenized = tokenizer(
+            str,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+            max_length=512,
+        )
+        data["src"].append(tokenized["input_ids"].flatten())
+        data["src_attn_mask"].append(tokenized["attention_mask"].flatten())
+        data["tgt"].append(tokenized["input_ids"].flatten())
+        data["tgt_attn_mask"].append(tokenized["attention_mask"].flatten())
+
+    tensor_data = {
+        "src": torch.stack(data["src"]),
+        "src_attn_mask": torch.stack(data["src_attn_mask"]),
+        "tgt": torch.stack(data["tgt"]),
+        "tgt_attn_mask": torch.stack(data["tgt_attn_mask"]),
+    }
+
+    return tensor_data

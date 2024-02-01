@@ -15,5 +15,5 @@ def test_model(model):
 
 def test_forward(model, batch):
     output, loss = model(**batch)
-    assert output.shape == (512, 30522)
+    assert output.shape == (2, 512, 30522)
     assert loss is not None
