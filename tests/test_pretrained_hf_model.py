@@ -1,8 +1,7 @@
 import pytest
-import pytorch_lightning as pl
 from transformers import BertModel, BertTokenizer
 
-from models.base_model import BaseModel
+from models.pretrained_hf_model import PretrainedHFModel
 
 
 @pytest.fixture(scope="module", params=[True, False])
@@ -12,7 +11,7 @@ def freeze_model(request):
 
 @pytest.fixture(scope="module")
 def base_model(freeze_model):
-    return BaseModel("bert-base-uncased", frozen=freeze_model)
+    return PretrainedHFModel("bert-base-uncased", frozen=freeze_model)
 
 
 @pytest.fixture

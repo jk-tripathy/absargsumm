@@ -3,9 +3,9 @@ import torch
 from torch import nn, optim
 from transformers import AutoConfig
 
-from models.base_model import BaseModel
 from models.GSum.gsum_decoder import GSumDecoder
 from models.GSum.gsum_decoder_layer import GSumDecoderLayer
+from models.pretrained_hf_model import PretrainedHFModel
 
 
 class GSum(pl.LightningModule):
@@ -13,7 +13,7 @@ class GSum(pl.LightningModule):
         super(GSum, self).__init__()
         self.args = args
 
-        self.base_model = BaseModel(model_name=args.model_name, frozen=args.frozen)
+        self.base_model = PretrainedHFModel(model_name=args.model_name, frozen=args.frozen)
         self.base_config = AutoConfig.from_pretrained(args.model_name)
 
         self.target_embed = nn.Embedding(self.base_config.vocab_size, self.base_config.hidden_size)

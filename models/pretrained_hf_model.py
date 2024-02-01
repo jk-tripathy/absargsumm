@@ -3,9 +3,9 @@ from torch import nn
 from transformers import AutoModel
 
 
-class BaseModel(nn.Module):
+class PretrainedHFModel(nn.Module):
     def __init__(self, model_name, frozen=True):
-        super(BaseModel, self).__init__()
+        super(PretrainedHFModel, self).__init__()
 
         self.model_name = model_name
         self.frozen = frozen
