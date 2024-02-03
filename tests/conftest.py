@@ -52,9 +52,13 @@ def batch_str():
     ]
 
 
+@pytest.fixture
+def tokenizer():
+    return BertTokenizer.from_pretrained("bert-base-uncased", use_fast=True)
+
+
 @pytest.fixture()
-def batch(batch_str):
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", use_fast=True)
+def batch(batch_str, tokenizer):
     data = {
         "src": [],
         "src_attn_mask": [],
@@ -75,10 +79,10 @@ def batch(batch_str):
         data["tgt_attn_mask"].append(tokenized["attention_mask"].flatten())
 
     tensor_data = {
-        "src": torch.stack(data["src"]),
-        "src_attn_mask": torch.stack(data["src_attn_mask"]),
-        "tgt": torch.stack(data["tgt"]),
-        "tgt_attn_mask": torch.stack(data["tgt_attn_mask"]),
+        "input_ids": torch.stack(data["src"]),
+        "attention_mask": torch.stack(data["src_attn_mask"]),
+        "decoder_input_ids": torch.stack(data["tgt"]),
+        "decoder_attention_mask": torch.stack(data["tgt_attn_mask"]),
     }
 
     return tensor_data
