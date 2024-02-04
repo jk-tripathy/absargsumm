@@ -38,7 +38,7 @@ def test_generate(model, tokenizer):
     output = model.generate(
         tokenized_input,
         max_length=20,
-        num_beams=5,
+        num_beams=2,
         no_repeat_ngram_size=2,
         early_stopping=True,
     )
