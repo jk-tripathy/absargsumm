@@ -9,9 +9,9 @@ root = pyrootutils.setup_root(
     cwd=True,
 )
 
-# from data.scientific_papers import ScientificPapersDataModule
+# from data import ScientificPapersDataModule
 # from models.SimpleTransformer import SimpleTransformer, SimpleTransformerConfig
-from utils.parser import parser
+from utils import parser
 
 # def train(args):
 #     dm = ScientificPapersDataModule(

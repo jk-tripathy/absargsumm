@@ -1,8 +1,11 @@
+from typing import Dict, Optional
+
 import torch
 from transformers import PreTrainedModel
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
 from models.SimpleTransformer import SimpleTransformerConfig
+from utils import create_masks, shift_tokens_right
 
 
 class SimpleTransformer(PreTrainedModel):
@@ -32,66 +35,22 @@ class SimpleTransformer(PreTrainedModel):
 
         self.loss = torch.nn.CrossEntropyLoss()
 
-    def create_masks(
-        self, attention_mask, decoder_attention_mask=None
-    ) -> (torch.Tensor, torch.Tensor):
-        attention_mask = attention_mask.unsqueeze(1)
-        # create subsequent mask
-        src_sub_mask = (
-            torch.triu(torch.ones(1, attention_mask.size(-1), attention_mask.size(-1))) == 1
-        )
-        src_mask = attention_mask & src_sub_mask
-        # why
-        # why must i do this?
-        # what does this even mean
-        # TODO: pray for salvation
-        src_mask = src_mask.repeat(self.config.num_attention_heads, 1, 1)
-        src_mask = src_mask.bool().to(attention_mask.device)
-
-        if decoder_attention_mask is not None:
-            tgt_attn_mask = decoder_attention_mask.unsqueeze(1)
-            # create subsequent mask
-            tgt_sub_mask = (
-                torch.triu(torch.ones(1, tgt_attn_mask.size(-1), tgt_attn_mask.size(-1))) == 1
-            )
-            tgt_mask = tgt_attn_mask & tgt_sub_mask
-            tgt_mask = tgt_mask.repeat(self.config.num_attention_heads, 1, 1)
-            tgt_mask = tgt_mask.bool().to(tgt_attn_mask.device)
-        else:
-            tgt_mask = None
-        return src_mask, tgt_mask
-
-    def shift_tokens_right(
-        self, input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int
-    ):
-        """Shift input ids one token to the right."""
-        shifted_input_ids = input_ids.new_zeros(input_ids.shape)
-        shifted_input_ids[:, 1:] = input_ids[:, :-1].clone()
-        shifted_input_ids[:, 0] = decoder_start_token_id
-
-        if pad_token_id is None:
-            raise ValueError("self.model.config.pad_token_id has to be defined.")
-        # replace possible -100 values in labels by `pad_token_id`
-        shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
-
-        return shifted_input_ids
-
     def forward(
         self,
-        input_ids=None,
-        attention_mask=None,
-        input_embeds=None,
-        decoder_input_ids=None,
-        decoder_attention_mask=None,
-        decoder_input_embeds=None,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        input_embeds: Optional[torch.tensor] = None,
+        decoder_input_ids: Optional[torch.tensor] = None,
+        decoder_attention_mask: Optional[torch.tensor] = None,
+        decoder_input_embeds: Optional[torch.tensor] = None,
         bos_token_id=69,
         **kwargs,
-    ):
+    ) -> Seq2SeqLMOutput:
         if decoder_input_ids is None and decoder_input_embeds is None:
-            decoder_input_ids = self.shift_tokens_right(input_ids, 0, bos_token_id)
+            decoder_input_ids = shift_tokens_right(input_ids, 0, bos_token_id)
 
-        encoder_attentions, decoder_attentions = self.create_masks(
-            attention_mask, decoder_attention_mask
+        encoder_attentions, decoder_attentions = create_masks(
+            self.config.num_attention_heads, attention_mask, decoder_attention_mask
         )
 
         input_embeds = self.encoder_embed(input_ids)
@@ -117,15 +76,15 @@ class SimpleTransformer(PreTrainedModel):
 
     def prepare_inputs_for_generation(
         self,
-        input_ids,
-        attention_mask=None,
-        input_embeds=None,
-        decoder_input_ids=None,
-        decoder_attention_mask=None,
-        decoder_input_embeds=None,
-        bos_token_id=69,
+        input_ids: torch.tensor,
+        attention_mask: torch.tensor,
+        input_embeds: Optional[torch.tensor] = None,
+        decoder_input_ids: Optional[torch.tensor] = None,
+        decoder_attention_mask: Optional[torch.tensor] = None,
+        decoder_input_embeds: Optional[torch.tensor] = None,
+        bos_token_id: int = 69,
         **kwargs,
-    ):
+    ) -> Dict[str, torch.tensor]:
         return {
             "input_ids": input_ids,
             "attention_mask": attention_mask,
