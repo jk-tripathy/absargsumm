@@ -1,5 +1,6 @@
 import pytest
 import torch
+
 from data import ScientificPapersDataModule
 from utils import parser
 

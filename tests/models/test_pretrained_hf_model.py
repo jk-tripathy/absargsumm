@@ -1,6 +1,7 @@
 import pytest
-from models.pretrained_hf_model import PretrainedHFModel
 from transformers import BertModel
+
+from models.pretrained_hf_model import PretrainedHFModel
 
 
 @pytest.fixture(scope="module", params=[True, False])

@@ -12,6 +12,7 @@ root = pyrootutils.setup_root(
 import pytest
 import torch
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
+
 from utils import get_tokenizer, parser, shift_tokens_right
 
 
