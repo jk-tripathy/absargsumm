@@ -34,7 +34,25 @@ def parser():
         "--model_name",
         type=str,
         default="bert-base-uncased",
-        help="Name of the model and tokenizer to use. Defaults to 'bert-base-uncased'.",
+        help="Name of the model to use. Defaults to 'bert-base-uncased'.",
+    )
+    parser.add_argument(
+        "--tokenizer_name",
+        type=str,
+        default="bert-base-uncased",
+        help="Name of the tokenizer to use. Defaults to 'bert-base-uncased'.",
+    )
+    parser.add_argument(
+        "--bos_token",
+        type=str,
+        default="<s>",
+        help="Beginning of sentence token. Defaults to '<s>'.",
+    )
+    parser.add_argument(
+        "--eos_token",
+        type=str,
+        default="</s>",
+        help="End of sentence token. Defaults to '</s>'.",
     )
     parser.add_argument(
         "--frozen",

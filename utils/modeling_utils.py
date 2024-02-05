@@ -1,6 +1,23 @@
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import torch
+from transformers import AutoTokenizer, PreTrainedTokenizer
+
+
+def get_tokenizer(
+    args: Dict[str, Union[str, int, bool]],
+) -> PreTrainedTokenizer:
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    special_tokens_dict = {
+        "bos_token": args.bos_token,
+        "eos_token": args.eos_token,
+    }
+    tokenizer.add_special_tokens(
+        special_tokens_dict,
+        replace_additional_special_tokens=True,
+    )
+
+    return tokenizer
 
 
 def shift_tokens_right(
@@ -11,6 +28,9 @@ def shift_tokens_right(
     """Shift input ids one token to the right."""
     shifted_input_ids = input_ids.new_zeros(input_ids.shape)
     shifted_input_ids[:, 1:] = input_ids[:, :-1].clone()
+    # replace any eos token in the input with pad token
+    shifted_input_ids.masked_fill_(shifted_input_ids == decoder_start_token_id, pad_token_id)
+
     shifted_input_ids[:, 0] = decoder_start_token_id
 
     if pad_token_id is None:
