@@ -42,30 +42,23 @@ def shift_tokens_right(
 
 
 def create_masks(
-    num_attention_heads: int,
     attention_mask: torch.Tensor,
+    expand_dims: bool = False,
+    for_causal: bool = False,
+    num_attention_heads: int = None,
     decoder_attention_mask: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, None]]:
-    attention_mask = attention_mask.unsqueeze(1)
+    mask = attention_mask.unsqueeze(1)
+    mask = mask.repeat(1, mask.size(-1), 1)
+
     # create subsequent mask
-    src_sub_mask = torch.triu(torch.ones(1, attention_mask.size(-1), attention_mask.size(-1))) == 1
-    src_mask = attention_mask & src_sub_mask
-    # TODO:
-    # src_mask needs to be bsz*nhead for multiheadattention but just bsz for BERT
-    # wut do?
+    if for_causal:
+        sub_mask = torch.triu(torch.ones(1, attention_mask.size(-1), attention_mask.size(-1))) == 1
+        mask = mask & sub_mask
 
-    src_mask = src_mask.repeat(num_attention_heads, 1, 1)
-    src_mask = src_mask.bool().to(attention_mask.device)
+    if expand_dims:
+        mask = mask.repeat(num_attention_heads, 1, 1)
 
-    if decoder_attention_mask is not None:
-        tgt_attn_mask = decoder_attention_mask.unsqueeze(1)
-        # create subsequent mask
-        tgt_sub_mask = (
-            torch.triu(torch.ones(1, tgt_attn_mask.size(-1), tgt_attn_mask.size(-1))) == 1
-        )
-        tgt_mask = tgt_attn_mask & tgt_sub_mask
-        tgt_mask = tgt_mask.repeat(num_attention_heads, 1, 1)
-        tgt_mask = tgt_mask.bool().to(tgt_attn_mask.device)
-    else:
-        tgt_mask = None
-    return src_mask, tgt_mask
+    mask = mask.bool().to(attention_mask.device)
+
+    return mask
