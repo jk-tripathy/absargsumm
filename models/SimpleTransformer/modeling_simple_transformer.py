@@ -49,9 +49,21 @@ class SimpleTransformer(PreTrainedModel):
         if decoder_input_ids is None and decoder_input_embeds is None:
             decoder_input_ids = shift_tokens_right(input_ids, 0, bos_token_id)
 
-        encoder_attentions, decoder_attentions = create_masks(
-            self.config.num_attention_heads, attention_mask, decoder_attention_mask
+        encoder_attentions = create_masks(
+            attention_mask,
+            expand_dims=True,
+            num_attention_heads=self.config.num_attention_heads,
+            for_causal=True,
         )
+        if decoder_attention_mask is not None:
+            decoder_attentions = create_masks(
+                decoder_attention_mask,
+                expand_dims=True,
+                num_attention_heads=self.config.num_attention_heads,
+                for_causal=True,
+            )
+        else:
+            decoder_attentions = None
 
         input_embeds = self.encoder_embed(input_ids)
         decoder_input_embeds = self.decoder_embed(decoder_input_ids)
@@ -78,19 +90,11 @@ class SimpleTransformer(PreTrainedModel):
         self,
         input_ids: torch.tensor,
         attention_mask: torch.tensor,
-        input_embeds: Optional[torch.tensor] = None,
-        decoder_input_ids: Optional[torch.tensor] = None,
-        decoder_attention_mask: Optional[torch.tensor] = None,
-        decoder_input_embeds: Optional[torch.tensor] = None,
         bos_token_id: int = 69,
         **kwargs,
     ) -> Dict[str, torch.tensor]:
         return {
             "input_ids": input_ids,
             "attention_mask": attention_mask,
-            "decoder_input_ids": decoder_input_ids,
-            "decoder_attention_mask": decoder_attention_mask,
-            "input_embeds": input_embeds,
-            "decoder_input_embeds": decoder_input_embeds,
             "bos_token_id": bos_token_id,
         }

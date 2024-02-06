@@ -34,9 +34,10 @@ def test_forward(model, batch):
 
 
 def test_generate(model, tokenizer):
-    tokenized_input = tokenizer.encode("Hello, my dog is cute", return_tensors="pt")
+    tokenized_input = tokenizer("Hello, my dog is cute", return_tensors="pt")
     output = model.generate(
-        tokenized_input,
+        input_ids=tokenized_input["input_ids"],
+        attention_mask=tokenized_input["attention_mask"],
         max_length=20,
         num_beams=2,
         no_repeat_ngram_size=2,
