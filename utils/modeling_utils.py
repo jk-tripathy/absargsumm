@@ -50,6 +50,10 @@ def create_masks(
     # create subsequent mask
     src_sub_mask = torch.triu(torch.ones(1, attention_mask.size(-1), attention_mask.size(-1))) == 1
     src_mask = attention_mask & src_sub_mask
+    # TODO:
+    # src_mask needs to be bsz*nhead for multiheadattention but just bsz for BERT
+    # wut do?
+
     src_mask = src_mask.repeat(num_attention_heads, 1, 1)
     src_mask = src_mask.bool().to(attention_mask.device)
 

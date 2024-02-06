@@ -4,7 +4,7 @@ from models.SimpleTransformer import SimpleTransformer, SimpleTransformerConfig
 
 
 @pytest.fixture()
-def model(parser_args):
+def model():
     config = SimpleTransformerConfig()
     model = SimpleTransformer(config)
     return model
@@ -23,13 +23,13 @@ def test_model(model):
     assert model is not None
 
 
-def test_registered_model(registered_model, tokenizer):
+def test_registered_model(registered_model):
     assert registered_model is not None
 
 
 def test_forward(model, batch):
     output = model(**batch)
-    assert output.logits.shape == (2, 512, 30522)
+    assert output.logits.shape == (2, 512, 30524)
     assert output.loss is not None
 
 

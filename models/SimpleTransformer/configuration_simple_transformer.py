@@ -6,7 +6,7 @@ class SimpleTransformerConfig(PretrainedConfig):
 
     def __init__(
         self,
-        vocab_size=30522,
+        vocab_size=30524,
         hidden_size=768,
         num_attention_heads=12,
         batch_first=True,

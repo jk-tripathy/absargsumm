@@ -137,3 +137,10 @@ def batch(batch_str, tokenizer):
     }
 
     return tensor_data
+
+
+@pytest.fixture()
+def batch_with_guidance(batch):
+    batch["guidance_input_ids"] = batch["input_ids"].clone()
+    batch["guidance_attention_mask"] = batch["attention_mask"].clone()
+    return batch

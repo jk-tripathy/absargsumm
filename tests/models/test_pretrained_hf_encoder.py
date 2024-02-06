@@ -1,7 +1,7 @@
 import pytest
 from transformers import BertModel
 
-from models.pretrained_hf_model import PretrainedHFModel
+from models.pretrained_hf_encoder import PretrainedHFEncoder
 
 
 @pytest.fixture(scope="module", params=[True, False])
@@ -11,7 +11,7 @@ def freeze_model(request):
 
 @pytest.fixture(scope="module")
 def base_model(freeze_model):
-    return PretrainedHFModel("bert-base-uncased", frozen=freeze_model)
+    return PretrainedHFEncoder("bert-base-uncased", frozen=freeze_model)
 
 
 def test_load(base_model):
@@ -20,8 +20,7 @@ def test_load(base_model):
 
 
 def test_output_shape(base_model, batch):
-    inputs = {"input_ids": batch["input_ids"], "attention_mask": batch["attention_mask"]}
-    outputs = base_model(inputs)
+    outputs = base_model(**batch)
     assert outputs.shape == (2, 512, 768)
 
 
