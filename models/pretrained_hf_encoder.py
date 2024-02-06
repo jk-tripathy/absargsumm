@@ -16,8 +16,8 @@ class PretrainedHFEncoder(nn.Module):
 
     def forward(self, input_ids, attention_mask=None, **kwargs):
         if not self.frozen:
-            logits = self.model(input_ids, attention_mask=attention_mask).last_hidden_state
+            output = self.model(input_ids, attention_mask=attention_mask)
         else:
             with torch.no_grad():
-                logits = self.model(input_ids, attention_mask=attention_mask).last_hidden_state
-        return logits
+                output = self.model(input_ids, attention_mask=attention_mask)
+        return output

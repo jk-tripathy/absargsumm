@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Dict, Optional
 
 import torch
@@ -8,11 +9,28 @@ from torch.nn.modules.dropout import Dropout
 from torch.nn.modules.linear import Linear
 from torch.nn.modules.normalization import LayerNorm
 from transformers import PreTrainedModel
-from transformers.modeling_outputs import Seq2SeqLMOutput
+from transformers.modeling_outputs import ModelOutput
 
 from models.GSum import GSumConfig
 from models.pretrained_hf_encoder import PretrainedHFEncoder
 from utils import create_masks, shift_tokens_right
+
+
+@dataclass
+class GSumEncoderBaseModelOutput(ModelOutput):
+    source_last_hidden_state: torch.tensor = None
+    guidance_last_hidden_state: torch.tensor = None
+    source_3D_attentions: torch.tensor = None
+    guidance_3D_attentions: torch.tensor = None
+
+
+@dataclass
+class GSumSeq2SeqLMOutput(ModelOutput):
+    loss: torch.tensor = None
+    logits: torch.tensor = None
+    source_last_hidden_state: torch.Tensor = None
+    guidance_last_hidden_state: torch.Tensor = None
+    decoder_last_hidden_state: torch.tensor = None
 
 
 class GSumEncoder(nn.Module):
@@ -43,30 +61,36 @@ class GSumEncoder(nn.Module):
         guidance_input_ids: torch.Tensor,
         guidance_attention_mask: torch.Tensor,
         **kwargs,
-    ):
-        input_embeds = self.pretrained_hf_encoder(
+    ) -> GSumEncoderBaseModelOutput:
+        expanded_attention_mask = create_masks(
+            attention_mask, expand_dims=True, num_attention_heads=self.config.nhead
+        )
+        expanded_guidance_attention_mask = create_masks(
+            guidance_attention_mask, expand_dims=True, num_attention_heads=self.config.nhead
+        )
+
+        source_encoder_output = self.pretrained_hf_encoder(
             input_ids,
             attention_mask=attention_mask,
         )
         source_logits = self.source_transformer_layer(
-            input_embeds,
+            source_encoder_output.last_hidden_state,
+            src_mask=expanded_attention_mask,
         )
-        guidance_input_embeds = self.pretrained_hf_encoder(
+        guidance_encoder_output = self.pretrained_hf_encoder(
             guidance_input_ids,
             attention_mask=guidance_attention_mask,
         )
         guidance_logits = self.guidance_transformer_layer(
-            guidance_input_embeds,
+            guidance_encoder_output.last_hidden_state,
+            src_mask=expanded_guidance_attention_mask,
         )
-        return {
-            "input_embeds": input_embeds,
-            "source_logits": source_logits,
-            "guidance_input_embeds": guidance_input_embeds,
-            "guidance_logits": guidance_logits,
-        }
-
-
-import torch
+        return GSumEncoderBaseModelOutput(
+            source_last_hidden_state=source_logits,
+            guidance_last_hidden_state=guidance_logits,
+            source_3D_attentions=expanded_attention_mask,
+            guidance_3D_attentions=expanded_guidance_attention_mask,
+        )
 
 
 class GSumDecoderLayer(nn.Module):
@@ -150,16 +174,20 @@ class GSumDecoderLayer(nn.Module):
     def forward(
         self,
         source_logits: torch.Tensor,
-        source_attentions: torch.Tensor,
+        source_3D_attentions: torch.Tensor,
         guidance_logits: torch.Tensor,
-        guidance_attentions: torch.Tensor,
+        guidance_3D_attentions: torch.Tensor,
         target_embeds: torch.Tensor,
-        target_attentions: torch.Tensor,
+        target_3D_attentions: torch.Tensor,
         **kwargs,
     ) -> torch.Tensor:
-        x = self.norm1(target_embeds + self._sa_block(target_embeds, target_attentions))
-        x = self.norm2(x + self._first_mha_block(target_embeds, source_logits, source_attentions))
-        x = self.norm3(x + self._second_mha_block(target_embeds, source_logits, source_attentions))
+        x = self.norm1(target_embeds + self._sa_block(target_embeds, target_3D_attentions))
+        x = self.norm2(
+            x + self._first_mha_block(target_embeds, source_logits, source_3D_attentions)
+        )
+        x = self.norm3(
+            x + self._second_mha_block(target_embeds, source_logits, source_3D_attentions)
+        )
         x = self.norm4(x + self._ff_block(x))
         return x
 
@@ -184,22 +212,22 @@ class GSumDecoder(nn.Module):
     def forward(
         self,
         source_logits: torch.Tensor,
-        source_attentions: torch.Tensor,
         guidance_logits: torch.Tensor,
-        guidance_attentions: torch.Tensor,
         target_input_ids: torch.Tensor,
-        target_attentions: torch.Tensor,
+        source_3D_attentions: torch.Tensor = None,
+        guidance_3D_attentions: torch.Tensor = None,
+        target_3D_attentions: torch.Tensor = None,
         **kwargs,
     ) -> torch.Tensor:
         target_embeds = self.decoder_embedding(target_input_ids)
         for layer in self.layers:
             x = layer(
                 source_logits=source_logits,
-                source_attentions=source_attentions,
+                source_3D_attentions=source_3D_attentions,
                 guidance_logits=guidance_logits,
-                guidance_attentions=guidance_attentions,
+                guidance_3D_attentions=guidance_3D_attentions,
                 target_embeds=target_embeds,
-                target_attentions=target_attentions,
+                target_3D_attentions=target_3D_attentions,
             )
 
         x = self.norm(x)
@@ -235,22 +263,40 @@ class GSum(PreTrainedModel):
         if decoder_input_ids is None and decoder_input_embeds is None:
             decoder_input_ids = shift_tokens_right(input_ids, 0, bos_token_id)
 
-        source_attentions, target_attentions = create_masks(
-            self.config.nhead, attention_mask, decoder_attention_mask
-        )
-        guidance_attentions = source_attentions.clone()
-
-        input_embeds, source_logits, guidance_input_embeds, guidance_logits = self.encoder(
+        encoder_output = self.encoder(
             input_ids=input_ids,
-            attention_mask=source_attentions,
+            attention_mask=attention_mask,
             guidance_input_ids=guidance_input_ids,
-            guidance_attention_mask=guidance_attentions,
+            guidance_attention_mask=guidance_attention_mask,
         )
+
+        source_attentions = create_masks(
+            attention_mask,
+            expand_dims=True,
+            num_attention_heads=12,
+            for_causal=True,
+        )
+        guidance_attentions = create_masks(
+            guidance_attention_mask,
+            expand_dims=True,
+            num_attention_heads=12,
+            for_causal=True,
+        )
+
+        if decoder_attention_mask is not None:
+            target_attentions = create_masks(
+                decoder_attention_mask,
+                expand_dims=True,
+                num_attention_heads=12,
+                for_causal=True,
+            )
+        else:
+            target_attentions = None
 
         decoder_last_hidden_state = self.decoder(
-            source_logits=source_logits,
+            source_logits=encoder_output.source_last_hidden_state,
             source_attentions=source_attentions,
-            guidance_logits=guidance_logits,
+            guidance_logits=encoder_output.guidance_last_hidden_state,
             guidance_attentions=guidance_attentions,
             target_input_ids=decoder_input_ids,
             target_attentions=target_attentions,
@@ -260,25 +306,20 @@ class GSum(PreTrainedModel):
 
         loss = self.loss(lm_logits.permute(0, 2, 1), decoder_input_ids)
 
-        return Seq2SeqLMOutput(
+        return GSumSeq2SeqLMOutput(
             loss=loss,
             logits=lm_logits,
+            source_last_hidden_state=encoder_output.source_last_hidden_state,
+            guidance_last_hidden_state=encoder_output.guidance_last_hidden_state,
             decoder_last_hidden_state=decoder_last_hidden_state,
-            encoder_last_hidden_state=input_embeds,
-            encoder_attentions=source_attentions,
         )
 
     def prepare_inputs_for_generation(
         self,
         input_ids: torch.tensor,
         attention_mask: torch.tensor,
-        guidance_input_ids: torch.Tensor = None,
-        guidance_attention_mask: torch.Tensor = None,
-        input_embeds: Optional[torch.tensor] = None,
-        guidance_input_embeds: Optional[torch.tensor] = None,
-        decoder_input_ids: Optional[torch.tensor] = None,
-        decoder_attention_mask: Optional[torch.tensor] = None,
-        decoder_input_embeds: Optional[torch.tensor] = None,
+        guidance_input_ids: torch.Tensor,
+        guidance_attention_mask: torch.Tensor,
         **kwargs,
     ) -> Dict[str, torch.tensor]:
         return {
@@ -286,9 +327,4 @@ class GSum(PreTrainedModel):
             "attention_mask": attention_mask,
             "guidance_input_ids": guidance_input_ids,
             "guidance_attention_mask": guidance_attention_mask,
-            "decoder_input_ids": decoder_input_ids,
-            "decoder_attention_mask": decoder_attention_mask,
-            "input_embeds": input_embeds,
-            "guidance_input_embeds": guidance_input_embeds,
-            "decoder_input_embeds": decoder_input_embeds,
         }
