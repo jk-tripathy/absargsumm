@@ -18,6 +18,12 @@ def parser():
         help="Dataset variant of the Scientific Papers dataset. Choose between 'arxiv' and 'pubmed'",
     )
     parser.add_argument(
+        "--dataset_limit",
+        type=int,
+        default=None,
+        help="Limit the number of samples in the dataset. Useful for debugging. Defaults to None.",
+    )
+    parser.add_argument(
         "--batch_size",
         type=int,
         default=16,
@@ -43,6 +49,12 @@ def parser():
         help="Name of the model to use. Defaults to 'bert-base-uncased'.",
     )
     parser.add_argument(
+        "--frozen",
+        type=bool,
+        default=True,
+        help="Whether to freeze the base model. Defaults to True.",
+    )
+    parser.add_argument(
         "--tokenizer_name",
         type=str,
         default="bert-base-uncased",
@@ -61,27 +73,21 @@ def parser():
         help="End of sentence token. Defaults to '</s>'.",
     )
     parser.add_argument(
-        "--frozen",
-        type=bool,
-        default=True,
-        help="Whether to freeze the base model. Defaults to True.",
-    )
-    parser.add_argument(
         "--learning_rate",
         type=float,
         default=3e-4,
         help="Learning rate. Defaults to 3e-4.",
     )
     parser.add_argument(
-        "--dataset_limit",
-        type=int,
-        default=None,
-        help="Limit the number of samples in the dataset. Useful for debugging. Defaults to None.",
-    )
-    parser.add_argument(
         "--batch_first",
         type=bool,
         default=True,
         help="Whether to freeze the base model. Defaults to True.",
+    )
+    parser.add_argument(
+        "--guidance",
+        type=str,
+        default="gsum",
+        help="Guidance type to use. Defaults to 'gsum'.",
     )
     return parser.parse_args()
