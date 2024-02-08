@@ -1,7 +1,7 @@
 import pytest
 from transformers import BertModel
 
-from models.pretrained_hf_encoder import PretrainedHFEncoder
+from models import PretrainedHFEncoder
 
 
 @pytest.fixture(scope="module", params=[True, False])

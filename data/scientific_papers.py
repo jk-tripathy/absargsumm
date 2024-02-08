@@ -12,6 +12,7 @@ class ScientificPapersDataset(Dataset):
             "scientific_papers",
             name=args.dataset_variant,
             split=split,
+            trust_remote_code=True,
         )
 
     def __len__(self):
