@@ -1,1 +1,1 @@
-from data.scientific_papers import ScientificPapersDataModule
+from data.scientific_papers import ScientificPapersDataset

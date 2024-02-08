@@ -6,6 +6,12 @@ def parser():
         description="Abstractive Summarization of Scientific Papers using Argumentative Structure",
     )
     parser.add_argument(
+        "--dataset",
+        type=str,
+        default="scientific_papers",
+        help="Name of the dataset to use. Defaults to 'scientific_papers'.",
+    )
+    parser.add_argument(
         "--dataset_variant",
         type=str,
         default="arxiv",
