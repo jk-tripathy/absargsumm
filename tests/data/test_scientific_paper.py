@@ -49,6 +49,8 @@ def test_dataset(datamodule, setup_stage):
 
     assert example["input_ids"].shape == torch.Size([512])
     assert example["attention_mask"].shape == torch.Size([512])
+    assert example["guidance_input_ids"].shape == torch.Size([512])
+    assert example["guidance_attention_mask"].shape == torch.Size([512])
     assert example["decoder_input_ids"].shape == torch.Size([512])
     assert example["decoder_attention_mask"].shape == torch.Size([512])
 
@@ -69,10 +71,14 @@ def test_dataloader(datamodule, setup_stage):
 
     assert type(batch_data["input_ids"]) is torch.Tensor
     assert type(batch_data["attention_mask"]) is torch.Tensor
+    assert type(batch_data["guidance_input_ids"]) is torch.Tensor
+    assert type(batch_data["guidance_attention_mask"]) is torch.Tensor
     assert type(batch_data["decoder_input_ids"]) is torch.Tensor
     assert type(batch_data["decoder_attention_mask"]) is torch.Tensor
 
     assert batch_data["input_ids"].shape == torch.Size([4, 512])
     assert batch_data["attention_mask"].shape == torch.Size([4, 512])
+    assert batch_data["guidance_input_ids"].shape == torch.Size([4, 512])
+    assert batch_data["guidance_attention_mask"].shape == torch.Size([4, 512])
     assert batch_data["decoder_input_ids"].shape == torch.Size([4, 512])
     assert batch_data["decoder_attention_mask"].shape == torch.Size([4, 512])
