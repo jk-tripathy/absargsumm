@@ -27,8 +27,8 @@ def test_registered_model(registered_model):
     assert registered_model is not None
 
 
-def test_forward(model, batch):
-    output = model(**batch)
+def test_forward(model, batch_with_guidance):
+    output = model(**batch_with_guidance)
     assert output.logits.shape == (2, 512, 30524)
     assert output.loss is not None
 

@@ -10,6 +10,7 @@ class PretrainedHFEncoder(nn.Module):
         self.model_name = model_name
         self.frozen = frozen
         self.model = AutoModel.from_pretrained(model_name)
+        self.model.resize_token_embeddings(30524)
         if frozen:
             for param in self.model.parameters():
                 param.requires_grad = False

@@ -53,7 +53,7 @@ class SimpleTransformer(PreTrainedModel):
             attention_mask,
             expand_dims=True,
             num_attention_heads=self.config.num_attention_heads,
-            for_causal=True,
+            for_causal=False,
         )
         if decoder_attention_mask is not None:
             decoder_attentions = create_masks(
@@ -67,12 +67,10 @@ class SimpleTransformer(PreTrainedModel):
 
         input_embeds = self.encoder_embed(input_ids)
         decoder_input_embeds = self.decoder_embed(decoder_input_ids)
-        encoder_last_hidden_state = self.encoder(input_embeds, mask=encoder_attentions)
+        encoder_last_hidden_state = self.encoder(input_embeds)
         decoder_last_hidden_state = self.decoder(
             decoder_input_embeds,
             encoder_last_hidden_state,
-            tgt_mask=decoder_attentions,
-            memory_mask=encoder_attentions,
         )
         lm_logits = self.linear(decoder_last_hidden_state)
 

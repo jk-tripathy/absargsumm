@@ -9,26 +9,24 @@ root = pyrootutils.setup_root(
     cwd=True,
 )
 
-# from data import ScientificPapersDataModule
-# from models.SimpleTransformer import SimpleTransformer, SimpleTransformerConfig
-from utils import parser
+import pytorch_lightning as pl
 
-# def train(args):
-#     dm = ScientificPapersDataModule(
-#         dataset_variant=args.dataset_variant,
-#         batch_size=args.batch_size,
-#         num_workers=args.num_workers,
-#         tokenizer_name=args.model_name,
-#         dataset_limit=args.dataset_limit,
-#     )
-#
-#     SimpleTransformerConfig.register_for_auto_class()
-#     SimpleTransformer.register_for_auto_class("AutoModelForSeq2SeqLM")
-#
-#     config = SimpleTransformerConfig()
-#     model = SimpleTransformer(config)
+from models.GSum import GSum, GSumConfig
+from utils import GenericDataModule, GenericModel, parser
+
+
+def train(args):
+    dm = GenericDataModule(args)
+    gsum_config = GSumConfig()
+    gsum_model = GSum(gsum_config)
+    model = GenericModel(gsum_model)
+    trainer = pl.Trainer(
+        accelerator="cpu",
+        max_epochs=10,
+    )
+    trainer.fit(model, dm)
 
 
 if __name__ == "__main__":
     args = parser()
-    # train(args)
+    train(args)

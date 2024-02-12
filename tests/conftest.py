@@ -24,6 +24,7 @@ def parser_args(monkeypatch):
             "--batch_size=4",
             "--stage=fit",
             "--dataset_limit=32",
+            "--max_input_length=20",
         ],
     )
     args = parser()
