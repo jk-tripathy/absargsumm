@@ -48,7 +48,13 @@ def create_masks(
     num_attention_heads: int = None,
     decoder_attention_mask: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, None]]:
-    mask = attention_mask.unsqueeze(1)
+    # our mask is used to prevent the model from attending to the padding tokens
+    # attention mask returned by the tokenizer is 0 for padding tokens and 1 for non-padding tokens
+    # so we need to invert it
+    # READ: https://stackoverflow.com/questions/62170439/difference-between-src-mask-and-src-key-padding-mask
+    inverted_mask = attention_mask == 0
+
+    mask = inverted_mask.unsqueeze(1)
     mask = mask.repeat(1, mask.size(-1), 1)
 
     # create subsequent mask
@@ -62,3 +68,15 @@ def create_masks(
     mask = mask.bool().to(attention_mask.device)
 
     return mask
+
+
+def generate_no_peek_mask(self, attention_mask) -> torch.Tensor:
+    sz = attention_mask.size(1)
+    mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+    mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
+    mask = mask.to(self.device)
+    return mask
+
+
+def generate_padding_mask(self, seq, pad_idx):
+    return (seq != pad_idx).to(self.device)

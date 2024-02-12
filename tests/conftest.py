@@ -42,11 +42,13 @@ def batch_str():
     return [
         "Hello, my dog is cute",
         "Hello, my cat is also cute",
+        "Hello, my dog is cute",
+        "Hello, my cat is also cute",
     ]
 
 
 @pytest.fixture()
-def batch(batch_str, tokenizer):
+def batch(batch_str, tokenizer, parser_args):
     data = {
         "input_ids": [],
         "attention_mask": [],
@@ -59,7 +61,7 @@ def batch(batch_str, tokenizer):
             return_tensors="pt",
             padding="max_length",
             truncation=True,
-            max_length=512,
+            max_length=parser_args.max_input_length,
         )
         data["input_ids"].append(tokenized["input_ids"].flatten())
         data["attention_mask"].append(tokenized["attention_mask"].flatten())

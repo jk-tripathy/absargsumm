@@ -21,7 +21,7 @@ def model():
 
 
 @pytest.mark.parametrize("setup_stage", ["fit", "validate", "test", "predict"])
-def test_dataloader(datamodule, setup_stage):
+def test_dataloader(datamodule, setup_stage, batch_with_guidance):
     datamodule.setup(stage=setup_stage)
     if setup_stage == "fit":
         dataloader = datamodule.train_dataloader()
@@ -48,17 +48,16 @@ def test_dataloader(datamodule, setup_stage):
     assert batch_data["decoder_input_ids"].shape == torch.Size([4, 20])
     assert batch_data["decoder_attention_mask"].shape == torch.Size([4, 20])
 
+    assert batch_data.keys() == batch_with_guidance.keys()
 
-#
-#
-# def test_model_forward(datamodule, model):
-#     datamodule.setup(stage="fit")
-#     batch_data = next(iter(datamodule.train_dataloader()))
-#     output = model.forward(batch_data)
-#     assert output.loss is not None
-#
-#
-#
+
+def test_model_forward(datamodule, model):
+    datamodule.setup(stage="fit")
+    batch_data = next(iter(datamodule.train_dataloader()))
+    output = model.forward(batch_data)
+    assert output.loss is not None
+
+
 # def test_fit(datamodule, model):
 #     trainer = pl.Trainer(
 #         accelerator="cpu",
