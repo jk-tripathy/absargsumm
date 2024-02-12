@@ -274,13 +274,13 @@ class GSum(PreTrainedModel):
             attention_mask,
             expand_dims=True,
             num_attention_heads=12,
-            for_causal=True,
+            for_causal=False,
         )
         guidance_attentions = create_masks(
             guidance_attention_mask,
             expand_dims=True,
             num_attention_heads=12,
-            for_causal=True,
+            for_causal=False,
         )
 
         if decoder_attention_mask is not None:

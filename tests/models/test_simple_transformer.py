@@ -29,7 +29,7 @@ def test_registered_model(registered_model):
 
 def test_forward(model, batch_with_guidance):
     output = model(**batch_with_guidance)
-    assert output.logits.shape == (2, 512, 30524)
+    assert output.logits.shape == (4, 20, 30524)
     assert output.loss is not None
 
 

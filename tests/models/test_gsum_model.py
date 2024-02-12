@@ -36,8 +36,8 @@ def test_model(model):
 def test_source_encoder(encoder, batch_with_guidance):
     output = encoder(**batch_with_guidance)
     assert output is not None
-    assert output.source_last_hidden_state.shape == (2, 512, 768)
-    assert output.guidance_last_hidden_state.shape == (2, 512, 768)
+    assert output.source_last_hidden_state.shape == (4, 20, 768)
+    assert output.guidance_last_hidden_state.shape == (4, 20, 768)
 
 
 def test_decoder(encoder, decoder, batch_with_guidance):
@@ -48,7 +48,7 @@ def test_decoder(encoder, decoder, batch_with_guidance):
         target_input_ids=batch_with_guidance["decoder_input_ids"],
     )
 
-    assert output.shape == (2, 512, 768)
+    assert output.shape == (4, 20, 768)
 
 
 def test_forward_SANITYCHECK(model, batch_with_guidance):
@@ -56,7 +56,7 @@ def test_forward_SANITYCHECK(model, batch_with_guidance):
         batch_with_guidance["attention_mask"],
         expand_dims=True,
         num_attention_heads=12,
-        for_causal=True,
+        for_causal=False,
     )
     target_attentions = create_masks(
         batch_with_guidance["decoder_attention_mask"],
@@ -77,7 +77,7 @@ def test_forward_SANITYCHECK(model, batch_with_guidance):
     )
     assert decoder_output is not None
     logits = model.linear(decoder_output)
-    assert logits.shape == (2, 512, 30524)
+    assert logits.shape == (4, 20, 30524)
     loss = model.loss(logits.permute(0, 2, 1), batch_with_guidance["decoder_input_ids"])
     assert loss is not None
 
@@ -88,7 +88,7 @@ def test_forward_SANITYCHECK(model, batch_with_guidance):
 def test_forward(model, batch_with_guidance):
     output = model(**batch_with_guidance)
     assert output.loss is not None
-    assert output.logits.shape == (2, 512, 30524)
+    assert output.logits.shape == (4, 20, 30524)
 
 
 def test_generate(model, batch_with_guidance, tokenizer):

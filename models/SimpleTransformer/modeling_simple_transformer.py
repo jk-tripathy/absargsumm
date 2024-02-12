@@ -70,15 +70,12 @@ class SimpleTransformer(PreTrainedModel):
         encoder_last_hidden_state = self.encoder(
             input_embeds,
             mask=encoder_attentions,
-            is_causal=False,
         )
         decoder_last_hidden_state = self.decoder(
             decoder_input_embeds,
             encoder_last_hidden_state,
             tgt_mask=decoder_attentions,
             memory_mask=encoder_attentions,
-            tgt_is_causal=True,
-            memory_is_causal=False,
         )
         lm_logits = self.linear(decoder_last_hidden_state)
 
