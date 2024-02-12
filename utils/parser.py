@@ -61,6 +61,12 @@ def parser():
         help="Name of the tokenizer to use. Defaults to 'bert-base-uncased'.",
     )
     parser.add_argument(
+        "--max_input_length",
+        type=int,
+        default=512,
+        help="Maximum input length. Defaults to 512.",
+    )
+    parser.add_argument(
         "--bos_token",
         type=str,
         default="<s>",

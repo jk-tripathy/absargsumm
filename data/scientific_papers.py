@@ -6,6 +6,7 @@ from utils import GSumGuidance, get_tokenizer
 
 class ScientificPapersDataset(Dataset):
     def __init__(self, args, split) -> None:
+        self.args = args
         self.tokenizer = get_tokenizer(args)
         if args.guidance != "none":
             self.guidance = GSumGuidance()
@@ -32,7 +33,7 @@ class ScientificPapersDataset(Dataset):
             article,
             padding="max_length",
             truncation=True,
-            max_length=512,
+            max_length=self.args.max_input_length,
             return_tensors="pt",
             add_special_tokens=False,
         )
@@ -40,7 +41,7 @@ class ScientificPapersDataset(Dataset):
             abstract,
             padding="max_length",
             truncation=True,
-            max_length=512,
+            max_length=self.args.max_input_length,
             return_tensors="pt",
             add_special_tokens=False,
         )
@@ -57,7 +58,7 @@ class ScientificPapersDataset(Dataset):
                 guidance_signal,
                 padding="max_length",
                 truncation=True,
-                max_length=512,
+                max_length=self.args.max_input_length,
                 return_tensors="pt",
                 add_special_tokens=False,
             )

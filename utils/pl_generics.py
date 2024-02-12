@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+from torch import optim
 from torch.utils.data import DataLoader
 
 from data import ScientificPapersDataset
@@ -65,3 +66,29 @@ class GenericDataModule(pl.LightningDataModule):
             batch_size=self.args.batch_size,
             num_workers=self.args.num_workers,
         )
+
+
+class GenericModel(pl.LightningModule):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, batch):
+        return self.model(**batch)
+
+    def training_step(self, batch, batch_idx):
+        model_output = self(batch)
+        self.log("train loss ", model_output.loss, prog_bar=True, logger=True)
+        return model_output.loss
+
+    def validation_step(self, batch, batch_idx):
+        model_output = self(batch)
+        self.log("val loss ", model_output.loss, prog_bar=True, logger=True)
+
+    def test_step(self, batch, batch_idx):
+        model_output = self(batch)
+        self.log("test loss ", model_output.loss, prog_bar=True, logger=True)
+
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=1e-3)
+        return optimizer
