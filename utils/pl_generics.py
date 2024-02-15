@@ -2,17 +2,14 @@ import pytorch_lightning as pl
 from torch import optim
 from torch.utils.data import DataLoader
 
-from data import ScientificPapersDataset
+from data import GenericDataset
 
 
 class GenericDataModule(pl.LightningDataModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.DATASET_CLASSES_DICT = {
-            "scientific_papers": ScientificPapersDataset,
-        }
-        self.dataset_class = self.DATASET_CLASSES_DICT[args.dataset]
+        self.dataset = GenericDataset(args)
 
     def setup(self, stage: str):
         """Setup the dataset for the given stage of the pipeline.
@@ -27,17 +24,17 @@ class GenericDataModule(pl.LightningDataModule):
             limit_length = ""
 
         if stage == "fit" or stage is None:
-            self.train_dataset = self.dataset_class(self.args, split="train" + limit_length)
-            self.val_dataset = self.dataset_class(self.args, split="validation" + limit_length)
+            self.train_dataset = self.dataset(self.args, split="train" + limit_length)
+            self.val_dataset = self.dataset(self.args, split="validation" + limit_length)
         elif stage == "validate":
-            self.val_dataset = self.dataset_class(
+            self.val_dataset = self.dataset(
                 self.args,
                 split="validation" + limit_length,
             )
         elif stage == "test":
-            self.test_dataset = self.dataset_class(self.args, split="test" + limit_length)
+            self.test_dataset = self.dataset(self.args, split="test" + limit_length)
         elif stage == "predict":
-            self.predict_dataset = self.dataset_class(self.args, split="test" + limit_length)
+            self.predict_dataset = self.dataset(self.args, split="test" + limit_length)
 
     def train_dataloader(self):
         return DataLoader(

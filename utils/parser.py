@@ -24,6 +24,18 @@ def parser():
         help="Limit the number of samples in the dataset. Useful for debugging. Defaults to None.",
     )
     parser.add_argument(
+        "--shorttext_column",
+        type=str,
+        default=None,
+        help="Column name of the short text in the dataset. Defaults to None.",
+    )
+    parser.add_argument(
+        "--longtext_column",
+        type=str,
+        default=None,
+        help="Column name of the long text in the dataset. Defaults to None.",
+    )
+    parser.add_argument(
         "--batch_size",
         type=int,
         default=16,

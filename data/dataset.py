@@ -1,10 +1,21 @@
-from datasets import load_dataset
+import pyrootutils
+
+root = pyrootutils.setup_root(
+    search_from=__file__,
+    indicator=".project-root",
+    project_root_env_var=True,
+    dotenv=True,
+    pythonpath=True,
+    cwd=True,
+)
+
+from datasets import load_dataset, load_from_disk
 from torch.utils.data import Dataset
 
-from utils import GSumGuidance, get_tokenizer
+from utils import GSumGuidance, get_tokenizer, parser
 
 
-class ScientificPapersDataset(Dataset):
+class GenericDataset(Dataset):
     def __init__(self, args, split) -> None:
         self.args = args
         self.tokenizer = get_tokenizer(args)
@@ -13,7 +24,7 @@ class ScientificPapersDataset(Dataset):
         else:
             self.guidance = None
         self.dataset = load_dataset(
-            "scientific_papers",
+            args.dataset,
             name=args.dataset_variant,
             split=split,
             trust_remote_code=True,
@@ -66,3 +77,25 @@ class ScientificPapersDataset(Dataset):
             ret_dict["guidance_attention_mask"] = tokenized_signal["attention_mask"].flatten()
 
         return ret_dict
+
+
+if __name__ == "__main__":
+    args = parser()
+    guidance_file_path = f"data/{args.dataset}_{args.guidance}_guidance"
+    dataset = load_dataset(args.dataset, name=args.dataset_variant)
+    col_names = dataset["train"].column_names
+    guidance = GSumGuidance()
+    updated_dataset = dataset.map(
+        lambda example: {
+            "guidance": guidance.get_guidance(
+                example[args.longtext_column],
+                example[args.shorttext_column],
+            )
+        },
+        batched=False,
+        remove_columns=col_names,
+    )
+    updated_dataset.save_to_disk(guidance_file_path)
+
+    guidance_dataset = load_from_disk(guidance_file_path)
+    print(guidance_dataset.column_names)

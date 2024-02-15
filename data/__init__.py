@@ -1,1 +1,1 @@
-from data.scientific_papers import ScientificPapersDataset
+from data.dataset import GenericDataset
