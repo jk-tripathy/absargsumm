@@ -81,7 +81,7 @@ class GenericDataset(Dataset):
 
 if __name__ == "__main__":
     args = parser()
-    guidance_file_path = f"data/{args.dataset}_{args.guidance}_guidance"
+    guidance_file_path = f"processed_guidance/{args.dataset}_{args.guidance}_guidance"
     dataset = load_dataset(args.dataset, name=args.dataset_variant)
     col_names = dataset["train"].column_names
     guidance = GSumGuidance()

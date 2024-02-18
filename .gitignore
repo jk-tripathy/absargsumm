@@ -1,6 +1,9 @@
 # log dir
 lightning_logs
 
+# guidances
+processed_guidance
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
