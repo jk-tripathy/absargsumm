@@ -9,7 +9,7 @@ root = pyrootutils.setup_root(
     cwd=True,
 )
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 
 from models.GSum import GSum, GSumConfig
 from utils import GenericDataModule, GenericModel, parser
@@ -19,10 +19,17 @@ def train(args):
     dm = GenericDataModule(args)
     gsum_config = GSumConfig()
     gsum_model = GSum(gsum_config)
+
     model = GenericModel(gsum_model)
+    logger = pl.loggers.WandbLogger(
+        project="gsum_test",
+        log_model="all",
+    )
+
     trainer = pl.Trainer(
         accelerator="cpu",
         max_epochs=10,
+        logger=logger,
     )
     trainer.fit(model, dm)
 
