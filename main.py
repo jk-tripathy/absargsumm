@@ -10,9 +10,12 @@ root = pyrootutils.setup_root(
 )
 
 import lightning.pytorch as pl
+from torch import set_float32_matmul_precision
 
 from models.GSum import GSum, GSumConfig
 from utils import GenericDataModule, GenericModel, parser
+
+set_float32_matmul_precision("medium")
 
 
 def train(args):
