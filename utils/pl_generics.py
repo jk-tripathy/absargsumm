@@ -9,7 +9,6 @@ class GenericDataModule(pl.LightningDataModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.dataset = GenericDataset(args)
 
     def setup(self, stage: str):
         """Setup the dataset for the given stage of the pipeline.
@@ -24,17 +23,12 @@ class GenericDataModule(pl.LightningDataModule):
             limit_length = ""
 
         if stage == "fit" or stage is None:
-            self.train_dataset = self.dataset(self.args, split="train" + limit_length)
-            self.val_dataset = self.dataset(self.args, split="validation" + limit_length)
+            self.train_dataset = GenericDataset(self.args, split="train" + limit_length)
+            self.val_dataset = GenericDataset(self.args, split="validation" + limit_length)
         elif stage == "validate":
-            self.val_dataset = self.dataset(
-                self.args,
-                split="validation" + limit_length,
-            )
+            self.val_dataset = GenericDataset(self.args, split="validation" + limit_length)
         elif stage == "test":
-            self.test_dataset = self.dataset(self.args, split="test" + limit_length)
-        elif stage == "predict":
-            self.predict_dataset = self.dataset(self.args, split="test" + limit_length)
+            self.test_dataset = GenericDataset(self.args, split="test" + limit_length)
 
     def train_dataloader(self):
         return DataLoader(
@@ -53,13 +47,6 @@ class GenericDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.test_dataset,
-            batch_size=self.args.batch_size,
-            num_workers=self.args.num_workers,
-        )
-
-    def predict_dataloader(self):
-        return DataLoader(
-            self.predict_dataset,
             batch_size=self.args.batch_size,
             num_workers=self.args.num_workers,
         )

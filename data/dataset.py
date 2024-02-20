@@ -9,7 +9,7 @@ root = pyrootutils.setup_root(
     cwd=True,
 )
 
-from datasets import load_dataset, load_from_disk
+from datasets import load_dataset
 from torch.utils.data import Dataset
 
 from utils import GSumGuidance, get_tokenizer, parser
@@ -17,10 +17,16 @@ from utils import GSumGuidance, get_tokenizer, parser
 
 class GenericDataset(Dataset):
     def __init__(self, args, split) -> None:
+        super().__init__()
         self.args = args
         self.tokenizer = get_tokenizer(args)
         if args.guidance != "none":
-            self.guidance = GSumGuidance()
+            guidance_datafiles = {
+                "train": f"processed_guidance/{args.dataset}_{args.guidance}_guidance/train/train.arrow",
+                "validation": f"processed_guidance/{args.dataset}_{args.guidance}_guidance/validation/validation.arrow",
+                "test": f"processed_guidance/{args.dataset}_{args.guidance}_guidance/test/test.arrow",
+            }
+            self.guidance = load_dataset("arrow", data_files=guidance_datafiles, split=split)
         else:
             self.guidance = None
         self.dataset = load_dataset(
@@ -37,8 +43,8 @@ class GenericDataset(Dataset):
         example = self.dataset[idx]
 
         # add bos and eos tokens
-        article = f"{self.tokenizer.bos_token} {example['article']} {self.tokenizer.eos_token}"
-        abstract = f"{self.tokenizer.bos_token} {example['abstract']}"
+        article = f"{self.tokenizer.bos_token} {example[self.args.longtext_column]} {self.tokenizer.eos_token}"
+        abstract = f"{self.tokenizer.bos_token} {example[self.args.shorttext_column]}"
 
         tokenized_input = self.tokenizer(
             article,
@@ -64,7 +70,7 @@ class GenericDataset(Dataset):
         }
 
         if self.guidance is not None:
-            guidance_signal = self.guidance.get_guidance(article, abstract)
+            guidance_signal = self.guidance[idx]["guidance"]
             tokenized_signal = self.tokenizer(
                 guidance_signal,
                 padding="max_length",

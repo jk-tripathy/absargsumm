@@ -20,7 +20,7 @@ def model():
     return model
 
 
-@pytest.mark.parametrize("setup_stage", ["fit", "validate", "test", "predict"])
+@pytest.mark.parametrize("setup_stage", ["fit", "validate", "test"])
 def test_dataloader(datamodule, setup_stage, batch_with_guidance):
     datamodule.setup(stage=setup_stage)
     if setup_stage == "fit":
@@ -29,8 +29,6 @@ def test_dataloader(datamodule, setup_stage, batch_with_guidance):
         dataloader = datamodule.val_dataloader()
     elif setup_stage == "test":
         dataloader = datamodule.test_dataloader()
-    elif setup_stage == "predict":
-        dataloader = datamodule.predict_dataloader()
 
     batch_data = next(iter(dataloader))
 

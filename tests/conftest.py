@@ -21,10 +21,15 @@ def parser_args(monkeypatch):
         "sys.argv",
         [
             "main.py",
+            "--dataset=cnn_dailymail",
+            "--dataset_variant=3.0.0",
+            "--shorttext_column=article",
+            "--longtext_column=highlights",
             "--batch_size=4",
             "--stage=fit",
             "--dataset_limit=32",
             "--max_input_length=20",
+            "--guidance=gsum",
         ],
     )
     args = parser()
