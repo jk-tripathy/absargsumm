@@ -21,14 +21,11 @@ def train(args):
     gsum_model = GSum(gsum_config)
 
     model = GenericModel(gsum_model)
-    logger = pl.loggers.WandbLogger(
-        project="gsum_test",
-        log_model="all",
-    )
+    logger = pl.loggers.WandbLogger(project=args.wandb_project, save_dir="logs")
 
     trainer = pl.Trainer(
-        accelerator="cpu",
-        max_epochs=10,
+        accelerator=args.accelerator,
+        max_epochs=args.max_epochs,
         logger=logger,
     )
     trainer.fit(model, dm)

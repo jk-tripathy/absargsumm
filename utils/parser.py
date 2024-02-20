@@ -6,6 +6,24 @@ def parser():
         description="Abstractive Summarization of Scientific Papers using Argumentative Structure",
     )
     parser.add_argument(
+        "--wandb_project",
+        type=str,
+        default=None,
+        help="Name of the Weights and Biases project. Defaults to None.",
+    )
+    parser.add_argument(
+        "--accelerator",
+        type=str,
+        default="gpu",
+        help="Type of accelerator to use. Defaults to 'gpu'.",
+    )
+    parser.add_argument(
+        "--max_epochs",
+        type=int,
+        default=1,
+        help="Maximum number of epochs. Defaults to 1.",
+    )
+    parser.add_argument(
         "--dataset",
         type=str,
         default="scientific_papers",
