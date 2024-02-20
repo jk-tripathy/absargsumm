@@ -14,7 +14,9 @@ class GSumConfig(PretrainedConfig):
         batch_first=True,
         pretrained_encoder_name_or_path="bert-base-uncased",
         freeze_encoder=True,
-        dropout=0.1,
+        dropout=0.2,
+        encoder_learning_rate=0.002,
+        decoder_learning_rate=0.2,
         **kwargs,
     ):
         super(GSumConfig, self).__init__(**kwargs)

@@ -3,7 +3,7 @@
 python main.py \
     --wandb_project gsum_test \
     --accelerator gpu \
-    --max_epochs 2 \
+    --max_steps 2 \
     --dataset cnn_dailymail \
     --dataset_variant 3.0.0 \
     --dataset_limit 16 \
@@ -13,3 +13,5 @@ python main.py \
     --batch_size 4 \
     --stage fit \
     --guidance gsum \
+    --encoder_learning_rate 0.002 \
+    --decoder_learning_rate 0.2 \

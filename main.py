@@ -29,6 +29,7 @@ def train(args):
     trainer = pl.Trainer(
         accelerator=args.accelerator,
         max_epochs=args.max_epochs,
+        max_steps=args.max_steps,
         logger=logger,
     )
     trainer.fit(model, dm)

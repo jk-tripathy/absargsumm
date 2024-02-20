@@ -20,8 +20,38 @@ def parser():
     parser.add_argument(
         "--max_epochs",
         type=int,
-        default=1,
+        default=None,
         help="Maximum number of epochs. Defaults to 1.",
+    )
+    parser.add_argument(
+        "--max_steps",
+        type=int,
+        default=None,
+        help="Maximum number of epochs. Defaults to 1.",
+    )
+    parser.add_argument(
+        "--encoder_warmup_steps",
+        type=int,
+        default=20000,
+        help="Number of warmup steps for the encoder. Defaults to 10000.",
+    )
+    parser.add_argument(
+        "--decoder_warmup_steps",
+        type=int,
+        default=10000,
+        help="Number of warmup steps for the decoder. Defaults to 10000.",
+    )
+    parser.add_argument(
+        "--encoder_learning_rate",
+        type=float,
+        default=3e-4,
+        help="Learning rate. Defaults to 3e-4.",
+    )
+    parser.add_argument(
+        "--decoder_learning_rate",
+        type=float,
+        default=3e-4,
+        help="Learning rate. Defaults to 3e-4.",
     )
     parser.add_argument(
         "--dataset",
@@ -107,12 +137,6 @@ def parser():
         type=str,
         default="</s>",
         help="End of sentence token. Defaults to '</s>'.",
-    )
-    parser.add_argument(
-        "--learning_rate",
-        type=float,
-        default=3e-4,
-        help="Learning rate. Defaults to 3e-4.",
     )
     parser.add_argument(
         "--batch_first",

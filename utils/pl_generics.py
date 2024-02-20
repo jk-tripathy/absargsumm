@@ -74,5 +74,14 @@ class GenericModel(pl.LightningModule):
         self.log("test loss ", model_output.loss, prog_bar=True, logger=True)
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-3)
-        return optimizer
+        encoder_optimizer = optim.Adam(
+            self.model.encoder.parameters(),
+            lr=self.args.encoder_learning_rate,
+            warmup_steps=self.args.encoder_warmup_steps,
+        )
+        decoder_optimizer = optim.Adam(
+            self.model.decoder.parameters(),
+            lr=self.args.decoder_learning_rate,
+            warmup_steps=self.args.decoder_warmup_steps,
+        )
+        return [encoder_optimizer, decoder_optimizer], []
