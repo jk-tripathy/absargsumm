@@ -53,9 +53,10 @@ class GenericDataModule(pl.LightningDataModule):
 
 
 class GenericModel(pl.LightningModule):
-    def __init__(self, model):
+    def __init__(self, model, args):
         super().__init__()
         self.model = model
+        self.args = args
 
     def forward(self, batch):
         return self.model(**batch)
@@ -74,14 +75,13 @@ class GenericModel(pl.LightningModule):
         self.log("test loss ", model_output.loss, prog_bar=True, logger=True)
 
     def configure_optimizers(self):
-        encoder_optimizer = optim.Adam(
-            self.model.encoder.parameters(),
-            lr=self.args.encoder_learning_rate,
-            warmup_steps=self.args.encoder_warmup_steps,
+        encoder_params = self.model.encoder.parameters()
+        decoder_params = self.model.decoder.parameters()
+        optimizer = optim.AdamW(
+            [
+                {"params": encoder_params, "lr": self.args.encoder_learning_rate},
+                {"params": decoder_params, "lr": self.args.decoder_learning_rate},
+            ]
         )
-        decoder_optimizer = optim.Adam(
-            self.model.decoder.parameters(),
-            lr=self.args.decoder_learning_rate,
-            warmup_steps=self.args.decoder_warmup_steps,
-        )
-        return [encoder_optimizer, decoder_optimizer], []
+
+        return optimizer

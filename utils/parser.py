@@ -30,18 +30,6 @@ def parser():
         help="Maximum number of epochs. Defaults to 1.",
     )
     parser.add_argument(
-        "--encoder_warmup_steps",
-        type=int,
-        default=20000,
-        help="Number of warmup steps for the encoder. Defaults to 10000.",
-    )
-    parser.add_argument(
-        "--decoder_warmup_steps",
-        type=int,
-        default=10000,
-        help="Number of warmup steps for the decoder. Defaults to 10000.",
-    )
-    parser.add_argument(
         "--encoder_learning_rate",
         type=float,
         default=3e-4,

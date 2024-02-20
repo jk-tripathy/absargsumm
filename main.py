@@ -23,7 +23,7 @@ def train(args):
     gsum_config = GSumConfig()
     gsum_model = GSum(gsum_config)
 
-    model = GenericModel(gsum_model)
+    model = GenericModel(gsum_model, args)
     logger = pl.loggers.WandbLogger(project=args.wandb_project, save_dir="logs")
 
     trainer = pl.Trainer(
