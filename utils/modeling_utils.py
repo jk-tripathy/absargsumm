@@ -60,6 +60,7 @@ def create_masks(
     # create subsequent mask
     if for_causal:
         sub_mask = torch.triu(torch.ones(1, attention_mask.size(-1), attention_mask.size(-1))) == 1
+        sub_mask = sub_mask.to(attention_mask.device)
         mask = mask & sub_mask
 
     if expand_dims:
