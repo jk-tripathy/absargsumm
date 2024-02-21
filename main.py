@@ -9,7 +9,10 @@ root = pyrootutils.setup_root(
     cwd=True,
 )
 
+import os
+
 import lightning.pytorch as pl
+import wandb
 from torch import set_float32_matmul_precision
 
 from models.GSum import GSum, GSumConfig
@@ -36,5 +39,11 @@ def train(args):
 
 
 if __name__ == "__main__":
+    api_key = os.environ.get("WANDB_API_KEY")
+    if api_key is None:
+        print("Wandb API key not found")
+        exit(1)
+    wandb.login(key=api_key)
+
     args = parser()
     train(args)
