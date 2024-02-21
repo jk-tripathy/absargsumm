@@ -1,8 +1,14 @@
 # log dir
 logs
 
+# HF cache
+huggingface
+
 # guidances
 processed_guidance
+
+# server config
+.pegasus-bridle.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
