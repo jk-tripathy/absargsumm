@@ -35,6 +35,7 @@ class GenericDataModule(pl.LightningDataModule):
             self.train_dataset,
             batch_size=self.args.batch_size,
             num_workers=self.args.num_workers,
+            shuffle=True,
         )
 
     def val_dataloader(self):
@@ -42,6 +43,7 @@ class GenericDataModule(pl.LightningDataModule):
             self.val_dataset,
             batch_size=self.args.batch_size,
             num_workers=self.args.num_workers,
+            shuffle=False,
         )
 
     def test_dataloader(self):
@@ -49,6 +51,7 @@ class GenericDataModule(pl.LightningDataModule):
             self.test_dataset,
             batch_size=self.args.batch_size,
             num_workers=self.args.num_workers,
+            shuffle=False,
         )
 
 
