@@ -34,6 +34,7 @@ def train(args):
         max_epochs=args.max_epochs,
         max_steps=args.max_steps,
         logger=logger,
+        log_every_n_steps=1,
     )
     trainer.fit(model, dm)
 

@@ -76,33 +76,51 @@ class GenericModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         model_output = self(batch)
-        self.log("train loss ", model_output.loss, prog_bar=True, logger=True)
         results = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
+        self.log("train loss", model_output.loss, prog_bar=True, logger=True)
         self.log("rouge1", results["rouge1"], prog_bar=True, logger=True)
         self.log("rouge2", results["rouge2"], prog_bar=True, logger=True)
         self.log("rougeL", results["rougeL"], prog_bar=True, logger=True)
+        return {
+            "loss": model_output.loss,
+            "rouge1": results["rouge1"],
+            "rouge2": results["rouge2"],
+            "rougeL": results["rougeL"],
+        }
 
     def validation_step(self, batch, batch_idx):
         model_output = self(batch)
-        self.log("val loss ", model_output.loss, prog_bar=True, logger=True)
         results = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
+        self.log("val loss", model_output.loss, prog_bar=True, logger=True)
         self.log("rouge1", results["rouge1"], prog_bar=True, logger=True)
         self.log("rouge2", results["rouge2"], prog_bar=True, logger=True)
         self.log("rougeL", results["rougeL"], prog_bar=True, logger=True)
+        return {
+            "loss": model_output.loss,
+            "rouge1": results["rouge1"],
+            "rouge2": results["rouge2"],
+            "rougeL": results["rougeL"],
+        }
 
     def test_step(self, batch, batch_idx):
         model_output = self(batch)
-        self.log("test loss ", model_output.loss, prog_bar=True, logger=True)
         results = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
+        self.log("test loss", model_output.loss, prog_bar=True, logger=True)
         self.log("rouge1", results["rouge1"], prog_bar=True, logger=True)
         self.log("rouge2", results["rouge2"], prog_bar=True, logger=True)
         self.log("rougeL", results["rougeL"], prog_bar=True, logger=True)
+        return {
+            "loss": model_output.loss,
+            "rouge1": results["rouge1"],
+            "rouge2": results["rouge2"],
+            "rougeL": results["rougeL"],
+        }
 
     def configure_optimizers(self):
         encoder_params = self.model.encoder.parameters()
