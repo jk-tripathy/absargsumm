@@ -3,7 +3,7 @@
 python main.py \
     --wandb_project gsum_test \
     --accelerator gpu \
-    --max_steps 2 \
+    --max_epochs 25 \
     --dataset cnn_dailymail \
     --dataset_variant 3.0.0 \
     --dataset_limit 16 \
