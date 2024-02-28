@@ -30,7 +30,10 @@ def train(args):
     formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
     logger = pl.loggers.WandbLogger(project=args.wandb_project, save_dir="logs")
     checkpoint_callback = ModelCheckpoint(
-        dirpath=f"saved_models/{formatted_timedate}", save_top_k=1, monitor="val loss"
+        dirpath=f"saved_models/{formatted_timedate}",
+        save_top_k=1,
+        monitor="val loss",
+        save_last=True,
     )
 
     trainer = pl.Trainer(
