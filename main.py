@@ -10,15 +10,15 @@ root = pyrootutils.setup_root(
 )
 
 import os
+from datetime import datetime
 
 import lightning.pytorch as pl
 import wandb
+from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import set_float32_matmul_precision
 
 from models.GSum import GSum, GSumConfig
 from utils import GenericDataModule, GenericModel, parser
-
-set_float32_matmul_precision("medium")
 
 
 def train(args):
@@ -27,7 +27,11 @@ def train(args):
     gsum_model = GSum(gsum_config)
 
     model = GenericModel(gsum_model, args)
+    formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
     logger = pl.loggers.WandbLogger(project=args.wandb_project, save_dir="logs")
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=f"saved_models/{formatted_timedate}", save_top_k=1, monitor="val loss"
+    )
 
     trainer = pl.Trainer(
         accelerator=args.accelerator,
@@ -35,11 +39,13 @@ def train(args):
         max_steps=args.max_steps,
         logger=logger,
         log_every_n_steps=1,
+        callbacks=[checkpoint_callback],
     )
     trainer.fit(model, dm)
 
 
 if __name__ == "__main__":
+    set_float32_matmul_precision("medium")
     api_key = os.environ.get("WANDB_API_KEY")
     if api_key is None:
         print("Wandb API key not found")

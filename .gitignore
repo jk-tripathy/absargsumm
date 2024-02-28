@@ -1,3 +1,6 @@
+# checkpoints dir
+saved_models
+
 # log dir
 logs
 
