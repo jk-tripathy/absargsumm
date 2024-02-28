@@ -20,13 +20,13 @@ def parser():
     parser.add_argument(
         "--max_epochs",
         type=int,
-        default=None,
+        default=-1,
         help="Maximum number of epochs. Defaults to 1.",
     )
     parser.add_argument(
         "--max_steps",
         type=int,
-        default=None,
+        default=-1,
         help="Maximum number of epochs. Defaults to 1.",
     )
     parser.add_argument(

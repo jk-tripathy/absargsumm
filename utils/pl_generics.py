@@ -1,8 +1,10 @@
 import lightning.pytorch as pl
-from torch import optim
+from evaluate import load
+from torch import argmax, optim
 from torch.utils.data import DataLoader
 
 from data import GenericDataset
+from utils import get_tokenizer
 
 
 class GenericDataModule(pl.LightningDataModule):
@@ -60,22 +62,47 @@ class GenericModel(pl.LightningModule):
         super().__init__()
         self.model = model
         self.args = args
+        self.tokenizer = get_tokenizer(self.args)
 
     def forward(self, batch):
         return self.model(**batch)
 
+    def calculate_metrics(self, outputs, targets):
+        rouge_metric = load("rouge")
+        refs = self.tokenizer.batch_decode(targets, skip_special_tokens=True)
+        preds = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        results = rouge_metric.compute(predictions=preds, references=refs)
+        return results
+
     def training_step(self, batch, batch_idx):
         model_output = self(batch)
         self.log("train loss ", model_output.loss, prog_bar=True, logger=True)
-        return model_output.loss
+        results = self.calculate_metrics(
+            argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
+        )
+        self.log("rouge1", results["rouge1"], prog_bar=True, logger=True)
+        self.log("rouge2", results["rouge2"], prog_bar=True, logger=True)
+        self.log("rougeL", results["rougeL"], prog_bar=True, logger=True)
 
     def validation_step(self, batch, batch_idx):
         model_output = self(batch)
         self.log("val loss ", model_output.loss, prog_bar=True, logger=True)
+        results = self.calculate_metrics(
+            argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
+        )
+        self.log("rouge1", results["rouge1"], prog_bar=True, logger=True)
+        self.log("rouge2", results["rouge2"], prog_bar=True, logger=True)
+        self.log("rougeL", results["rougeL"], prog_bar=True, logger=True)
 
     def test_step(self, batch, batch_idx):
         model_output = self(batch)
         self.log("test loss ", model_output.loss, prog_bar=True, logger=True)
+        results = self.calculate_metrics(
+            argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
+        )
+        self.log("rouge1", results["rouge1"], prog_bar=True, logger=True)
+        self.log("rouge2", results["rouge2"], prog_bar=True, logger=True)
+        self.log("rougeL", results["rougeL"], prog_bar=True, logger=True)
 
     def configure_optimizers(self):
         encoder_params = self.model.encoder.parameters()
