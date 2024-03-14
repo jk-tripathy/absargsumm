@@ -66,15 +66,6 @@ repos:
           - mdformat-tables
           - mdformat_frontmatter
 
-  # word spelling linter
-  - repo: https://github.com/codespell-project/codespell
-    rev: v2.1.0
-    hooks:
-      - id: codespell
-        args:
-          - --skip=logs/**,data/**,*.ipynb,tests/fixtures/dataset_builders/**
-          - --ignore-words-list=hist,abstract,arbitrary,ist
-
   # python static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.0.1
