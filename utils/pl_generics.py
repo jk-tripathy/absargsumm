@@ -2,6 +2,7 @@ import lightning.pytorch as pl
 from evaluate import load
 from torch import argmax, optim
 from torch.utils.data import DataLoader
+from transformers import get_inverse_sqrt_schedule
 
 from data import GenericDataset
 from utils import get_tokenizer
@@ -123,13 +124,20 @@ class GenericModel(pl.LightningModule):
         }
 
     def configure_optimizers(self):
-        encoder_params = self.model.encoder.parameters()
+        pretrained_encoder_params = self.model.encoder.pretrained_hf_encoder.parameters()
+        source_transformer_layer = self.model.encoder.source_transformer_layer.parameters()
+        guidance_transformer_layer = self.model.encoder.guidance_transformer_layer.parameters()
         decoder_params = self.model.decoder.parameters()
-        optimizer = optim.AdamW(
+
+        optimizer = optim.Adam(
             [
-                {"params": encoder_params, "lr": self.args.encoder_learning_rate},
+                {"params": pretrained_encoder_params, "lr": self.args.encoder_learning_rate},
+                {"params": source_transformer_layer, "lr": self.args.decoder_learning_rate},
+                {"params": guidance_transformer_layer, "lr": self.args.decoder_learning_rate},
                 {"params": decoder_params, "lr": self.args.decoder_learning_rate},
             ]
         )
 
-        return optimizer
+        lr_scheduler = get_inverse_sqrt_schedule(optimizer, self.args.warmup_steps)
+
+        return [optimizer], [{"scheduler": lr_scheduler, "interval": "step"}]

@@ -14,3 +14,4 @@ $HOME/pegasus-bridle/wrapper.sh python main.py \
     --guidance gsum \
     --encoder_learning_rate 0.002 \
     --decoder_learning_rate 0.2 \
+    --warmup_steps 15000 \

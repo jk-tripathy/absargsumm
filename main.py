@@ -41,14 +41,14 @@ def train(args):
         max_epochs=args.max_epochs,
         max_steps=args.max_steps,
         logger=logger,
-        log_every_n_steps=1,
+        log_every_n_steps=100,
         callbacks=[checkpoint_callback],
     )
     trainer.fit(model, dm)
 
 
 if __name__ == "__main__":
-    set_float32_matmul_precision("medium")
+    set_float32_matmul_precision("high")
     api_key = os.environ.get("WANDB_API_KEY")
     if api_key is None:
         print("Wandb API key not found")

@@ -39,7 +39,13 @@ def parser():
         "--decoder_learning_rate",
         type=float,
         default=3e-4,
-        help="Learning rate. Defaults to 3e-4.",
+        help="learning rate. defaults to 3e-4.",
+    )
+    parser.add_argument(
+        "--warmup_steps",
+        type=float,
+        default=0,
+        help="learning rate. defaults to 0.",
     )
     parser.add_argument(
         "--dataset",
