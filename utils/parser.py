@@ -21,13 +21,13 @@ def parser():
         "--max_epochs",
         type=int,
         default=-1,
-        help="Maximum number of epochs. Defaults to 1.",
+        help="Maximum number of epochs. Defaults to -1.",
     )
     parser.add_argument(
         "--max_steps",
         type=int,
         default=-1,
-        help="Maximum number of epochs. Defaults to 1.",
+        help="Maximum number of epochs. Defaults to -1.",
     )
     parser.add_argument(
         "--encoder_learning_rate",
