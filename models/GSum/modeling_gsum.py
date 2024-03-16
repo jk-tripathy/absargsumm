@@ -304,7 +304,7 @@ class GSum(PreTrainedModel):
 
         lm_logits = self.linear(decoder_last_hidden_state)
 
-        loss = self.loss(lm_logits.permute(0, 2, 1), decoder_input_ids)
+        loss = self.loss(lm_logits.view(-1, self.config.vocab_size), decoder_input_ids.view(-1))
 
         return GSumSeq2SeqLMOutput(
             loss=loss,
