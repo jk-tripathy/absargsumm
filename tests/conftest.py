@@ -12,7 +12,8 @@ root = pyrootutils.setup_root(
 import pytest
 import torch
 
-from utils import get_tokenizer, parser
+from models.GSum import GSumConfig
+from utils import GenericDataModule, get_tokenizer, parser
 
 
 @pytest.fixture()
@@ -26,10 +27,8 @@ def parser_args(monkeypatch):
             "--shorttext_column=highlights",
             "--longtext_column=article",
             "--batch_size=4",
-            "--stage=fit",
             "--dataset_limit=32",
-            "--max_input_length=20",
-            "--guidance=gsum",
+            "--guidance_type=gsum",
         ],
     )
     args = parser()
@@ -38,8 +37,28 @@ def parser_args(monkeypatch):
 
 
 @pytest.fixture
-def tokenizer(parser_args):
-    return get_tokenizer(parser_args)
+def tokenizer():
+    config = GSumConfig()
+    return get_tokenizer(
+        model_name=config.pretrained_encoder_name_or_path,
+        bos_token=config.bos_token,
+        eos_token=config.eos_token,
+    )
+
+
+@pytest.fixture
+def dm(parser_args, tokenizer):
+    dm = GenericDataModule(
+        dataset=parser_args.dataset,
+        dataset_variant=parser_args.dataset_variant,
+        dataset_limit=parser_args.dataset_limit,
+        longtext_column=parser_args.longtext_column,
+        shorttext_column=parser_args.shorttext_column,
+        batch_size=parser_args.batch_size,
+        guidance_type=parser_args.guidance_type,
+        tokenizer=tokenizer,
+    )
+    return dm
 
 
 @pytest.fixture
@@ -53,7 +72,7 @@ def batch_str():
 
 
 @pytest.fixture()
-def batch(batch_str, tokenizer, parser_args):
+def batch(batch_str, tokenizer):
     data = {
         "input_ids": [],
         "attention_mask": [],
@@ -66,7 +85,7 @@ def batch(batch_str, tokenizer, parser_args):
             return_tensors="pt",
             padding="max_length",
             truncation=True,
-            max_length=parser_args.max_input_length,
+            max_length=tokenizer.model_max_length,
         )
         data["input_ids"].append(tokenized["input_ids"].flatten())
         data["attention_mask"].append(tokenized["attention_mask"].flatten())

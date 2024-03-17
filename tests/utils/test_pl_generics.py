@@ -1,58 +1,51 @@
 import pytest
 import torch
-from evaluate import load
 
-from models.SimpleTransformer import SimpleTransformer, SimpleTransformerConfig
-from utils import GenericDataModule, GenericModel
-
-
-@pytest.fixture
-def datamodule(parser_args):
-    dm = GenericDataModule(parser_args)
-    return dm
+from models.GSum import GSum, GSumConfig
+from utils import GenericModel
 
 
 @pytest.fixture
-def model(parser_args):
-    config = SimpleTransformerConfig()
-    simple_model = SimpleTransformer(config)
-    model = GenericModel(simple_model, parser_args)
+def model(tokenizer):
+    config = GSumConfig()
+    model = GSum(config)
+    model = GenericModel(model, tokenizer)
     return model
 
 
 @pytest.mark.parametrize("setup_stage", ["fit", "validate", "test"])
-def test_dataloader(datamodule, setup_stage, batch_with_guidance):
-    datamodule.setup(stage=setup_stage)
+def test_dataloader(dm, setup_stage, batch_with_guidance):
+    dm.setup(stage=setup_stage)
     if setup_stage == "fit":
-        dataloader = datamodule.train_dataloader()
+        dataloader = dm.train_dataloader()
     elif setup_stage == "validate":
-        dataloader = datamodule.val_dataloader()
+        dataloader = dm.val_dataloader()
     elif setup_stage == "test":
-        dataloader = datamodule.test_dataloader()
+        dataloader = dm.test_dataloader()
 
-    batch_data = next(iter(dataloader))
+    batch = next(iter(dataloader))
 
-    assert type(batch_data["input_ids"]) is torch.Tensor
-    assert type(batch_data["attention_mask"]) is torch.Tensor
-    assert type(batch_data["guidance_input_ids"]) is torch.Tensor
-    assert type(batch_data["guidance_attention_mask"]) is torch.Tensor
-    assert type(batch_data["decoder_input_ids"]) is torch.Tensor
-    assert type(batch_data["decoder_attention_mask"]) is torch.Tensor
+    assert type(batch["input_ids"]) is torch.Tensor
+    assert type(batch["attention_mask"]) is torch.Tensor
+    assert type(batch["guidance_input_ids"]) is torch.Tensor
+    assert type(batch["guidance_attention_mask"]) is torch.Tensor
+    assert type(batch["decoder_input_ids"]) is torch.Tensor
+    assert type(batch["decoder_attention_mask"]) is torch.Tensor
 
-    assert batch_data["input_ids"].shape == torch.Size([4, 20])
-    assert batch_data["attention_mask"].shape == torch.Size([4, 20])
-    assert batch_data["guidance_input_ids"].shape == torch.Size([4, 20])
-    assert batch_data["guidance_attention_mask"].shape == torch.Size([4, 20])
-    assert batch_data["decoder_input_ids"].shape == torch.Size([4, 20])
-    assert batch_data["decoder_attention_mask"].shape == torch.Size([4, 20])
+    assert batch["input_ids"].shape == torch.Size([4, dm.tokenizer.model_max_length])
+    assert batch["attention_mask"].shape == torch.Size([4, dm.tokenizer.model_max_length])
+    assert batch["guidance_input_ids"].shape == torch.Size([4, dm.tokenizer.model_max_length])
+    assert batch["guidance_attention_mask"].shape == torch.Size([4, dm.tokenizer.model_max_length])
+    assert batch["decoder_input_ids"].shape == torch.Size([4, dm.tokenizer.model_max_length])
+    assert batch["decoder_attention_mask"].shape == torch.Size([4, dm.tokenizer.model_max_length])
 
-    assert batch_data.keys() == batch_with_guidance.keys()
+    assert batch.keys() == batch_with_guidance.keys()
 
 
-def test_model_forward(datamodule, model, tokenizer):
-    datamodule.setup(stage="fit")
-    batch_data = next(iter(datamodule.train_dataloader()))
-    output = model.forward(batch_data)
+def test_model_forward(dm, model, tokenizer):
+    dm.setup(stage="fit")
+    batch = next(iter(dm.train_dataloader()))
+    output = model.forward(batch)
     assert output.loss is not None
 
 
