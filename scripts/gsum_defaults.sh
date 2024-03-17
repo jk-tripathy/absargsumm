@@ -10,5 +10,5 @@ $HOME/pegasus-bridle/wrapper.sh python main.py \
     --longtext_column article \
     --shorttext_column highlights \
     --guidance_type gsum \
-    --batch_size 100 \
+    --batch_size 64 \
     --stage fit \
