@@ -12,26 +12,38 @@ root = pyrootutils.setup_root(
 from datasets import load_dataset
 from torch.utils.data import Dataset
 
-from utils import GSumGuidance, get_tokenizer, parser
+from utils import GSumGuidance, parser
 
 
 class GenericDataset(Dataset):
-    def __init__(self, args, split) -> None:
+    def __init__(
+        self,
+        dataset,
+        dataset_variant,
+        longtext_column,
+        shorttext_column,
+        split,
+        tokenizer,
+        guidance_type,
+    ) -> None:
         super().__init__()
-        self.args = args
-        self.tokenizer = get_tokenizer(args)
-        if args.guidance != "none":
+        self.tokenizer = tokenizer
+        self.longtext_column = longtext_column
+        self.shorttext_column = shorttext_column
+        if guidance_type != "none":
             guidance_datafiles = {
-                "train": f"processed_guidance/{args.dataset}_{args.guidance}_guidance/train/train.arrow",
-                "validation": f"processed_guidance/{args.dataset}_{args.guidance}_guidance/validation/validation.arrow",
-                "test": f"processed_guidance/{args.dataset}_{args.guidance}_guidance/test/test.arrow",
+                "train": f"processed_guidance/{dataset}_{guidance_type}_guidance/train/train.arrow",
+                "validation": f"processed_guidance/{dataset}_{guidance_type}_guidance/validation/validation.arrow",
+                "test": f"processed_guidance/{dataset}_{guidance_type}_guidance/test/test.arrow",
             }
-            self.guidance = load_dataset("arrow", data_files=guidance_datafiles, split=split)
+            self.guidance_dataset = load_dataset(
+                "arrow", data_files=guidance_datafiles, split=split
+            )
         else:
-            self.guidance = None
+            self.guidance_dataset = None
         self.dataset = load_dataset(
-            args.dataset,
-            name=args.dataset_variant,
+            dataset,
+            name=dataset_variant,
             split=split,
             trust_remote_code=True,
         )
@@ -43,14 +55,14 @@ class GenericDataset(Dataset):
         example = self.dataset[idx]
 
         # add bos and eos tokens
-        article = f"{self.tokenizer.bos_token} {example[self.args.longtext_column]} {self.tokenizer.eos_token}"
-        abstract = f"{self.tokenizer.bos_token} {example[self.args.shorttext_column]}"
+        article = f"{self.tokenizer.bos_token} {example[self.longtext_column]} {self.tokenizer.eos_token}"
+        abstract = f"{self.tokenizer.bos_token} {example[self.shorttext_column]}"
 
         tokenized_input = self.tokenizer(
             article,
             padding="max_length",
             truncation=True,
-            max_length=self.args.max_input_length,
+            max_length=self.tokenizer.model_max_length,
             return_tensors="pt",
             add_special_tokens=False,
         )
@@ -58,7 +70,7 @@ class GenericDataset(Dataset):
             abstract,
             padding="max_length",
             truncation=True,
-            max_length=self.args.max_input_length,
+            max_length=self.tokenizer.model_max_length,
             return_tensors="pt",
             add_special_tokens=False,
         )
@@ -69,13 +81,13 @@ class GenericDataset(Dataset):
             "decoder_attention_mask": tokenized_output["attention_mask"].flatten(),
         }
 
-        if self.guidance is not None:
-            guidance_signal = self.guidance[idx]["guidance"]
+        if self.guidance_dataset is not None:
+            guidance_signal = self.guidance_dataset[idx]["guidance"]
             tokenized_signal = self.tokenizer(
                 guidance_signal,
                 padding="max_length",
                 truncation=True,
-                max_length=self.args.max_input_length,
+                max_length=self.tokenizer.model_max_length,
                 return_tensors="pt",
                 add_special_tokens=False,
             )
@@ -102,6 +114,3 @@ if __name__ == "__main__":
         remove_columns=col_names,
     )
     updated_dataset.save_to_disk(guidance_file_path)
-
-    guidance_dataset = load_from_disk(guidance_file_path)
-    print(guidance_dataset.column_names)

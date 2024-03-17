@@ -13,10 +13,13 @@ class GSumConfig(PretrainedConfig):
         num_decoder_layers=12,
         batch_first=True,
         pretrained_encoder_name_or_path="bert-base-uncased",
-        freeze_encoder=True,
+        freeze_encoder=False,
         dropout=0.2,
         encoder_learning_rate=0.002,
         decoder_learning_rate=0.2,
+        warmup_steps=15000,
+        bos_token="<s>",
+        eos_token="</s>",
         **kwargs,
     ):
         super(GSumConfig, self).__init__(**kwargs)
@@ -30,6 +33,11 @@ class GSumConfig(PretrainedConfig):
         self.pretrained_encoder_name_or_path = pretrained_encoder_name_or_path
         self.freeze_encoder = freeze_encoder
         self.dropout = dropout
+        self.encoder_learning_rate = encoder_learning_rate
+        self.decoder_learning_rate = decoder_learning_rate
+        self.warmup_steps = warmup_steps
+        self.bos_token = bos_token
+        self.eos_token = eos_token
 
     def to_dict(self):
         return {
@@ -41,4 +49,9 @@ class GSumConfig(PretrainedConfig):
             "pretrained_encoder_name_or_path": self.pretrained_encoder_name_or_path,
             "freeze_encoder": self.freeze_encoder,
             "dropout": self.dropout,
+            "encoder_learning_rate": self.encoder_learning_rate,
+            "decoder_learning_rate": self.decoder_learning_rate,
+            "warmup_steps": self.warmup_steps,
+            "bos_token": self.bos_token,
+            "eos_token": self.eos_token,
         }

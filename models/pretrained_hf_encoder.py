@@ -4,7 +4,7 @@ from transformers import AutoModel
 
 
 class PretrainedHFEncoder(nn.Module):
-    def __init__(self, model_name, frozen=True):
+    def __init__(self, model_name, frozen):
         super(PretrainedHFEncoder, self).__init__()
 
         self.model_name = model_name

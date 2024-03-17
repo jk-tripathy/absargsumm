@@ -1,16 +1,18 @@
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import torch
 from transformers import AutoTokenizer, PreTrainedTokenizer
 
 
 def get_tokenizer(
-    args: Dict[str, Union[str, int, bool]],
+    model_name: str,
+    bos_token: str,
+    eos_token: str,
 ) -> PreTrainedTokenizer:
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     special_tokens_dict = {
-        "bos_token": args.bos_token,
-        "eos_token": args.eos_token,
+        "bos_token": bos_token,
+        "eos_token": eos_token,
     }
     tokenizer.add_special_tokens(
         special_tokens_dict,
