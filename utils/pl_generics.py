@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 from transformers import get_inverse_sqrt_schedule
 
 from data import GenericDataset
-from utils import get_tokenizer
 
 
 class GenericDataModule(pl.LightningDataModule):
