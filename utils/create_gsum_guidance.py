@@ -1,6 +1,7 @@
 import re
 from collections import OrderedDict
 
+import nltk
 import numpy as np
 import spacy
 from nltk.tokenize import sent_tokenize
@@ -110,6 +111,7 @@ class GSumGuidance:
         self.min_diff = 1e-5  # convergence threshold
         self.steps = 10  # iteration steps
         self.node_weight = None  # save keywords and its weight
+        nltk.download("punkt")
 
     def set_stopwords(self, stopwords):
         """Set stop words."""

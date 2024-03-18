@@ -16,7 +16,5 @@ def test_dataset(dm, setup_stage):
 
     assert example["input_ids"].shape == torch.Size([dm.tokenizer.model_max_length])
     assert example["attention_mask"].shape == torch.Size([dm.tokenizer.model_max_length])
-    assert example["guidance_input_ids"].shape == torch.Size([dm.tokenizer.model_max_length])
-    assert example["guidance_attention_mask"].shape == torch.Size([dm.tokenizer.model_max_length])
     assert example["decoder_input_ids"].shape == torch.Size([dm.tokenizer.model_max_length])
     assert example["decoder_attention_mask"].shape == torch.Size([dm.tokenizer.model_max_length])

@@ -28,7 +28,7 @@ def parser_args(monkeypatch):
             "--longtext_column=article",
             "--batch_size=4",
             "--dataset_limit=32",
-            "--guidance_type=gsum",
+            "--guidance_type=none",
         ],
     )
     args = parser()

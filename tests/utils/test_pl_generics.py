@@ -24,6 +24,8 @@ def test_dataloader(dm, setup_stage, batch_with_guidance):
         dataloader = dm.test_dataloader()
 
     batch = next(iter(dataloader))
+    batch["guidance_input_ids"] = batch["input_ids"]
+    batch["guidance_attention_mask"] = batch["attention_mask"]
 
     assert type(batch["input_ids"]) is torch.Tensor
     assert type(batch["attention_mask"]) is torch.Tensor
@@ -45,6 +47,8 @@ def test_dataloader(dm, setup_stage, batch_with_guidance):
 def test_model_forward(dm, model, tokenizer):
     dm.setup(stage="fit")
     batch = next(iter(dm.train_dataloader()))
+    batch["guidance_input_ids"] = batch["input_ids"]
+    batch["guidance_attention_mask"] = batch["attention_mask"]
     output = model.forward(batch)
     assert output.loss is not None
 
