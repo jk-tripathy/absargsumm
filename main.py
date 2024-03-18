@@ -46,7 +46,7 @@ def train(args):
     checkpoint_callback = ModelCheckpoint(
         dirpath=f"saved_models/{formatted_timedate}",
         save_top_k=1,
-        monitor="val loss",
+        monitor="val/loss",
         save_last=True,
     )
 
@@ -55,8 +55,8 @@ def train(args):
         max_epochs=args.max_epochs,
         max_steps=args.max_steps,
         logger=logger,
-        log_every_n_steps=100,
-        val_check_interval=100,
+        log_every_n_steps=args.log_step,
+        val_check_interval=args.log_step,
         callbacks=[checkpoint_callback],
     )
     trainer.fit(model, dm)

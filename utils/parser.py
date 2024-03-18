@@ -18,6 +18,12 @@ def parser():
         help="Type of accelerator to use. Defaults to 'gpu'.",
     )
     parser.add_argument(
+        "--log_step",
+        type=int,
+        default=100,
+        help="Log and validate every n steps. Defaults to 100.",
+    )
+    parser.add_argument(
         "--max_epochs",
         type=int,
         default=-1,

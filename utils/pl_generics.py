@@ -37,9 +37,11 @@ class GenericDataModule(pl.LightningDataModule):
             dataset_limit: Limit the number of samples in the dataset. Defaults to None.
         """
         if self.dataset_limit is not None:
-            limit_length = f"[:{self.dataset_limit}]"
+            train_limit_length = f"[:{self.dataset_limit}]"
+            val_test_limit_length = f"[:{self.dataset_limit//8}]"
         else:
-            limit_length = ""
+            train_limit_length = ""
+            val_test_limit_length = ""
 
         if stage == "fit" or stage is None:
             self.train_dataset = GenericDataset(
@@ -47,7 +49,7 @@ class GenericDataModule(pl.LightningDataModule):
                 dataset_variant=self.dataset_variant,
                 longtext_column=self.longtext_column,
                 shorttext_column=self.shorttext_column,
-                split="train" + limit_length,
+                split="train" + train_limit_length,
                 tokenizer=self.tokenizer,
                 guidance_type=self.guidance_type,
             )
@@ -56,7 +58,7 @@ class GenericDataModule(pl.LightningDataModule):
                 dataset_variant=self.dataset_variant,
                 longtext_column=self.longtext_column,
                 shorttext_column=self.shorttext_column,
-                split="validation" + limit_length,
+                split="validation" + val_test_limit_length,
                 tokenizer=self.tokenizer,
                 guidance_type=self.guidance_type,
             )
@@ -67,7 +69,7 @@ class GenericDataModule(pl.LightningDataModule):
                 dataset_variant=self.dataset_variant,
                 longtext_column=self.longtext_column,
                 shorttext_column=self.shorttext_column,
-                split="validation" + limit_length,
+                split="validation" + val_test_limit_length,
                 tokenizer=self.tokenizer,
                 guidance_type=self.guidance_type,
             )
@@ -77,7 +79,7 @@ class GenericDataModule(pl.LightningDataModule):
                 dataset_variant=self.dataset_variant,
                 longtext_column=self.longtext_column,
                 shorttext_column=self.shorttext_column,
-                split="test" + limit_length,
+                split="test" + val_test_limit_length,
                 tokenizer=self.tokenizer,
                 guidance_type=self.guidance_type,
             )
@@ -125,15 +127,15 @@ class GenericModel(pl.LightningModule):
         results = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
-        self.log("train loss", model_output.loss, prog_bar=True, logger=True)
-        self.log("train rouge1", results["rouge1"], prog_bar=True, logger=True)
-        self.log("train rouge2", results["rouge2"], prog_bar=True, logger=True)
-        self.log("train rougeL", results["rougeL"], prog_bar=True, logger=True)
+        self.log("train/loss", model_output.loss, prog_bar=True, logger=True)
+        self.log("train/rouge1", results["rouge1"], prog_bar=True, logger=True)
+        self.log("train/rouge2", results["rouge2"], prog_bar=True, logger=True)
+        self.log("train/rougeL", results["rougeL"], prog_bar=True, logger=True)
         return {
             "loss": model_output.loss,
-            "train rouge1": results["rouge1"],
-            "train rouge2": results["rouge2"],
-            "train rougeL": results["rougeL"],
+            "train/rouge1": results["rouge1"],
+            "train/rouge2": results["rouge2"],
+            "train/rougeL": results["rougeL"],
         }
 
     def validation_step(self, batch, batch_idx):
@@ -141,15 +143,15 @@ class GenericModel(pl.LightningModule):
         results = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
-        self.log("val loss", model_output.loss, prog_bar=True, logger=True)
-        self.log("val rouge1", results["rouge1"], prog_bar=True, logger=True)
-        self.log("val rouge2", results["rouge2"], prog_bar=True, logger=True)
-        self.log("val rougeL", results["rougeL"], prog_bar=True, logger=True)
+        self.log("val/loss", model_output.loss, prog_bar=True, logger=True)
+        self.log("val/rouge1", results["rouge1"], prog_bar=True, logger=True)
+        self.log("val/rouge2", results["rouge2"], prog_bar=True, logger=True)
+        self.log("val/rougeL", results["rougeL"], prog_bar=True, logger=True)
         return {
             "loss": model_output.loss,
-            "val rouge1": results["rouge1"],
-            "val rouge2": results["rouge2"],
-            "val rougeL": results["rougeL"],
+            "val/rouge1": results["rouge1"],
+            "val/rouge2": results["rouge2"],
+            "val/rougeL": results["rougeL"],
         }
 
     def test_step(self, batch, batch_idx):
@@ -157,15 +159,15 @@ class GenericModel(pl.LightningModule):
         results = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
-        self.log("test loss", model_output.loss, prog_bar=True, logger=True)
-        self.log("test rouge1", results["rouge1"], prog_bar=True, logger=True)
-        self.log("test rouge2", results["rouge2"], prog_bar=True, logger=True)
-        self.log("test rougeL", results["rougeL"], prog_bar=True, logger=True)
+        self.log("test/loss", model_output.loss, prog_bar=True, logger=True)
+        self.log("test/rouge1", results["rouge1"], prog_bar=True, logger=True)
+        self.log("test/rouge2", results["rouge2"], prog_bar=True, logger=True)
+        self.log("test/rougeL", results["rougeL"], prog_bar=True, logger=True)
         return {
             "loss": model_output.loss,
-            "test rouge1": results["rouge1"],
-            "test rouge2": results["rouge2"],
-            "test rougeL": results["rougeL"],
+            "test/rouge1": results["rouge1"],
+            "test/rouge2": results["rouge2"],
+            "test/rougeL": results["rougeL"],
         }
 
     def configure_optimizers(self):
