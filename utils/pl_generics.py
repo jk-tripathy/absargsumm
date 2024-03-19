@@ -109,7 +109,7 @@ class GenericDataModule(pl.LightningDataModule):
 
 class GenericModel(pl.LightningModule):
     def __init__(self, model, tokenizer):
-        super().__init__()
+        super(GenericModel, self).__init__()
         self.model = model
         self.tokenizer = tokenizer
         self.train_table = Table(columns=["step", "loss", "gold text", "pred text"])

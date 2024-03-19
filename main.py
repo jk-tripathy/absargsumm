@@ -62,6 +62,42 @@ def train(args):
     trainer.fit(model, dm)
 
 
+def test(args):
+    gsum_config = GSumConfig()
+    gsum_model = GSum(gsum_config)
+    tokenizer = get_tokenizer(
+        model_name=gsum_config.pretrained_encoder_name_or_path,
+        bos_token=gsum_config.bos_token,
+        eos_token=gsum_config.eos_token,
+    )
+    dm = GenericDataModule(
+        dataset=args.dataset,
+        dataset_variant=args.dataset_variant,
+        dataset_limit=args.dataset_limit,
+        longtext_column=args.longtext_column,
+        shorttext_column=args.shorttext_column,
+        batch_size=args.batch_size,
+        tokenizer=tokenizer,
+        guidance_type=args.guidance_type,
+    )
+
+    model = GenericModel.load_from_checkpoint(
+        "saved_models/2024-03-19_13-30/epoch=4-step=560.ckpt",
+        model=gsum_model,
+        tokenizer=tokenizer,
+    )
+    logger = pl.loggers.WandbLogger(project=args.wandb_project, save_dir="logs")
+    trainer = pl.Trainer(
+        accelerator=args.accelerator,
+        max_epochs=args.max_epochs,
+        max_steps=args.max_steps,
+        logger=logger,
+        log_every_n_steps=args.log_step,
+        val_check_interval=args.log_step,
+    )
+    trainer.test(model, dm)
+
+
 if __name__ == "__main__":
     set_float32_matmul_precision("high")
     api_key = os.environ.get("WANDB_API_KEY")
@@ -71,4 +107,4 @@ if __name__ == "__main__":
     wandb.login(key=api_key)
 
     args = parser()
-    train(args)
+    test(args)
