@@ -112,8 +112,8 @@ class GenericModel(pl.LightningModule):
         super(GenericModel, self).__init__()
         self.model = model
         self.tokenizer = tokenizer
-        self.train_table = Table(columns=["step", "loss", "gold text", "pred text"])
-        self.val_table = Table(columns=["step", "loss", "gold text", "pred text"])
+        self.train_table = Table(columns=["step", "loss", "guidance", "gold text", "pred text"])
+        self.val_table = Table(columns=["step", "loss", "guidance", "gold text", "pred text"])
 
     def forward(self, batch):
         return self.model(**batch)
@@ -131,9 +131,13 @@ class GenericModel(pl.LightningModule):
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
         if batch_idx % self.trainer.val_check_interval == 0:
+            guidance = self.tokenizer.batch_decode(
+                batch["guidance_input_ids"], skip_special_tokens=True
+            )
             self.train_table.add_data(
                 self.trainer.global_step,
                 model_output.loss.item(),
+                guidance[0],
                 refs[0],
                 preds[0],
             )
@@ -157,9 +161,13 @@ class GenericModel(pl.LightningModule):
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
         if batch_idx % self.trainer.val_check_interval == 0:
+            guidance = self.tokenizer.batch_decode(
+                batch["guidance_input_ids"], skip_special_tokens=True
+            )
             self.val_table.add_data(
                 self.trainer.global_step,
                 model_output.loss.item(),
+                guidance[0],
                 refs[0],
                 preds[0],
             )

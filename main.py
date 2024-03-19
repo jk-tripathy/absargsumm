@@ -107,4 +107,4 @@ if __name__ == "__main__":
     wandb.login(key=api_key)
 
     args = parser()
-    test(args)
+    train(args)
