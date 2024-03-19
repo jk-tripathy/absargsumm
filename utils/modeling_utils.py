@@ -10,9 +10,11 @@ def get_tokenizer(
     eos_token: str,
 ) -> PreTrainedTokenizer:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    pad_token = tokenizer.pad_token
     special_tokens_dict = {
         "bos_token": bos_token,
         "eos_token": eos_token,
+        "pad_token": pad_token,
     }
     tokenizer.add_special_tokens(
         special_tokens_dict,

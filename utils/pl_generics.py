@@ -3,6 +3,7 @@ from evaluate import load
 from torch import argmax, optim
 from torch.utils.data import DataLoader
 from transformers import get_inverse_sqrt_schedule
+from wandb import Table
 
 from data import GenericDataset
 
@@ -111,6 +112,8 @@ class GenericModel(pl.LightningModule):
         super().__init__()
         self.model = model
         self.tokenizer = tokenizer
+        self.train_table = Table(columns=["step", "loss", "gold text", "pred text"])
+        self.val_table = Table(columns=["step", "loss", "gold text", "pred text"])
 
     def forward(self, batch):
         return self.model(**batch)
@@ -120,13 +123,23 @@ class GenericModel(pl.LightningModule):
         refs = self.tokenizer.batch_decode(targets, skip_special_tokens=True)
         preds = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         results = rouge_metric.compute(predictions=preds, references=refs)
-        return results
+        return results, refs, preds
 
     def training_step(self, batch, batch_idx):
         model_output = self(batch)
-        results = self.calculate_metrics(
+        results, refs, preds = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
+        if batch_idx % self.trainer.val_check_interval == 0:
+            self.train_table.add_data(
+                self.trainer.global_step,
+                model_output.loss.item(),
+                refs[0],
+                preds[0],
+            )
+            new_table = Table(columns=self.train_table.columns, data=self.train_table.data)
+            self.logger.experiment.log({"samples/train": new_table}, commit=False)
+
         self.log("train/loss", model_output.loss, prog_bar=True, logger=True)
         self.log("train/rouge1", results["rouge1"], prog_bar=True, logger=True)
         self.log("train/rouge2", results["rouge2"], prog_bar=True, logger=True)
@@ -140,9 +153,19 @@ class GenericModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         model_output = self(batch)
-        results = self.calculate_metrics(
+        results, refs, preds = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
+        if batch_idx % self.trainer.val_check_interval == 0:
+            self.val_table.add_data(
+                self.trainer.global_step,
+                model_output.loss.item(),
+                refs[0],
+                preds[0],
+            )
+            new_table = Table(columns=self.val_table.columns, data=self.val_table.data)
+            self.logger.experiment.log({"samples/val": new_table}, commit=False)
+
         self.log("val/loss", model_output.loss, prog_bar=True, logger=True)
         self.log("val/rouge1", results["rouge1"], prog_bar=True, logger=True)
         self.log("val/rouge2", results["rouge2"], prog_bar=True, logger=True)
@@ -156,7 +179,7 @@ class GenericModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         model_output = self(batch)
-        results = self.calculate_metrics(
+        results, refs, preds = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
         self.log("test/loss", model_output.loss, prog_bar=True, logger=True)
