@@ -9,6 +9,10 @@ from torch.nn.modules.dropout import Dropout
 from torch.nn.modules.linear import Linear
 from torch.nn.modules.normalization import LayerNorm
 from transformers import PreTrainedModel
+from transformers.modeling_attn_mask_utils import (
+    _create_4d_causal_attention_mask,
+    _prepare_4d_attention_mask,
+)
 from transformers.modeling_outputs import ModelOutput
 
 from models.GSum import GSumConfig
@@ -57,9 +61,9 @@ class GSumEncoder(nn.Module):
     def forward(
         self,
         input_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
         guidance_input_ids: torch.Tensor,
-        guidance_attention_mask: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        guidance_attention_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> GSumEncoderBaseModelOutput:
         expanded_attention_mask = create_masks(
@@ -141,7 +145,7 @@ class GSumDecoderLayer(nn.Module):
     def _sa_block(
         self,
         x: torch.Tensor,
-        attn_mask: torch.Tensor,
+        attn_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         x = self.self_attn(x, x, x, attn_mask=attn_mask, need_weights=False)[0]
         return self.dropout1(x)
@@ -151,7 +155,7 @@ class GSumDecoderLayer(nn.Module):
         self,
         x: torch.Tensor,
         mem: torch.Tensor,
-        attn_mask: torch.Tensor,
+        attn_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         x = self.first_multihead_attn(x, mem, mem, attn_mask=attn_mask, need_weights=False)[0]
         return self.dropout2(x)
@@ -161,7 +165,7 @@ class GSumDecoderLayer(nn.Module):
         self,
         x: torch.Tensor,
         mem: torch.Tensor,
-        attn_mask: torch.Tensor,
+        attn_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         x = self.second_multihead_attn(x, mem, mem, attn_mask=attn_mask, need_weights=False)[0]
         return self.dropout3(x)
@@ -174,11 +178,11 @@ class GSumDecoderLayer(nn.Module):
     def forward(
         self,
         source_logits: torch.Tensor,
-        source_3D_attentions: torch.Tensor,
         guidance_logits: torch.Tensor,
-        guidance_3D_attentions: torch.Tensor,
         target_embeds: torch.Tensor,
-        target_3D_attentions: torch.Tensor,
+        source_3D_attentions: Optional[torch.Tensor] = None,
+        guidance_3D_attentions: Optional[torch.Tensor] = None,
+        target_3D_attentions: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> torch.Tensor:
         x = self.norm1(target_embeds + self._sa_block(target_embeds, target_3D_attentions))
@@ -214,9 +218,9 @@ class GSumDecoder(nn.Module):
         source_logits: torch.Tensor,
         guidance_logits: torch.Tensor,
         target_input_ids: torch.Tensor,
-        source_3D_attentions: torch.Tensor = None,
-        guidance_3D_attentions: torch.Tensor = None,
-        target_3D_attentions: torch.Tensor = None,
+        source_3D_attentions: Optional[torch.Tensor] = None,
+        guidance_3D_attentions: Optional[torch.Tensor] = None,
+        target_3D_attentions: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> torch.Tensor:
         target_embeds = self.decoder_embedding(target_input_ids)
@@ -270,28 +274,50 @@ class GSum(PreTrainedModel):
             guidance_attention_mask=guidance_attention_mask,
         )
 
-        source_attentions = create_masks(
-            attention_mask,
-            expand_dims=True,
-            num_attention_heads=12,
-            for_causal=True,
+        source_attentions = _prepare_4d_attention_mask(
+            mask=attention_mask,
+            dtype=torch.float32,
         )
-        guidance_attentions = create_masks(
-            guidance_attention_mask,
-            expand_dims=True,
-            num_attention_heads=12,
-            for_causal=True,
+        guidance_attentions = _prepare_4d_attention_mask(
+            mask=guidance_attention_mask,
+            dtype=torch.float32,
         )
 
         if decoder_attention_mask is not None:
-            target_attentions = create_masks(
-                decoder_attention_mask,
-                expand_dims=True,
-                num_attention_heads=12,
-                for_causal=True,
+            target_attentions = _create_4d_causal_attention_mask(
+                input_shape=decoder_attention_mask.shape,
+                dtype=torch.float32,
+                device=decoder_attention_mask.device,
             )
         else:
             target_attentions = None
+
+        # source_attentions = create_masks(
+        #     attention_mask,
+        #     expand_dims=True,
+        #     num_attention_heads=12,
+        #     for_causal=True,
+        # )
+        # guidance_attentions = create_masks(
+        #     guidance_attention_mask,
+        #     expand_dims=True,
+        #     num_attention_heads=12,
+        #     for_causal=True,
+        # )
+
+        # if decoder_attention_mask is not None:
+        #     target_attentions = create_masks(
+        #         decoder_attention_mask,
+        #         expand_dims=True,
+        #         num_attention_heads=12,
+        #         for_causal=True,
+        #     )
+        # else:
+        #     target_attentions = None
+
+        # source_attentions = None
+        # guidance_attentions = None
+        # target_attentions = None
 
         decoder_last_hidden_state = self.decoder(
             source_logits=encoder_output.source_last_hidden_state,
