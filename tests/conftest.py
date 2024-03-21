@@ -46,6 +46,14 @@ def tokenizer():
     )
 
 
+def test_tokenizer(tokenizer):
+    config = GSumConfig()
+    assert tokenizer.pad_token == config.pad_token
+    assert tokenizer.pad_token_id == config.pad_token_id
+    assert tokenizer.bos_token == config.bos_token
+    assert tokenizer.eos_token == config.eos_token
+
+
 @pytest.fixture
 def dm(parser_args, tokenizer):
     dm = GenericDataModule(

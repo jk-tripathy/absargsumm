@@ -288,7 +288,7 @@ class GSum(PreTrainedModel):
 
         self.linear = nn.Linear(self.config.d_model, self.config.vocab_size)
 
-        self.loss = nn.CrossEntropyLoss()
+        self.loss = nn.CrossEntropyLoss(ignore_index=self.config.pad_token_id, reduction="sum")
 
     def forward(
         self,
