@@ -15,6 +15,8 @@ class GSumConfig(PretrainedConfig):
         batch_first=True,
         pretrained_encoder_name_or_path="bert-base-uncased",
         pad_token_id=0,
+        bos_token_id=1,
+        eos_token_id=2,
         freeze_encoder=False,
         dropout=0.2,
         encoder_learning_rate=0.002,

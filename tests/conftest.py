@@ -51,7 +51,9 @@ def test_tokenizer(tokenizer):
     assert tokenizer.pad_token == config.pad_token
     assert tokenizer.pad_token_id == config.pad_token_id
     assert tokenizer.bos_token == config.bos_token
+    assert tokenizer.bos_token_id == 1
     assert tokenizer.eos_token == config.eos_token
+    assert tokenizer.eos_token_id == 2
 
 
 @pytest.fixture

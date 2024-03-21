@@ -301,11 +301,10 @@ class GSum(PreTrainedModel):
         decoder_input_ids: Optional[torch.tensor] = None,
         decoder_attention_mask: Optional[torch.tensor] = None,
         decoder_input_embeds: Optional[torch.tensor] = None,
-        bos_token_id: int = 69,
         **kwargs,
     ):
         if decoder_input_ids is None and decoder_input_embeds is None:
-            decoder_input_ids = shift_tokens_right(input_ids, 0, bos_token_id)
+            decoder_input_ids = shift_tokens_right(input_ids, 0, self.config.bos_token_id)
 
         encoder_output = self.encoder(
             input_ids=input_ids,
@@ -325,7 +324,9 @@ class GSum(PreTrainedModel):
 
         lm_logits = self.linear(decoder_last_hidden_state)
 
-        loss = self.loss(lm_logits.view(-1, self.config.vocab_size), decoder_input_ids.view(-1))
+        loss = self.loss(
+            lm_logits.view(-1, self.config.vocab_size), decoder_input_ids.view(-1)
+        ).item()
 
         return GSumSeq2SeqLMOutput(
             loss=loss,
