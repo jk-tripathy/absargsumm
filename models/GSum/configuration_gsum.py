@@ -7,6 +7,7 @@ class GSumConfig(PretrainedConfig):
     def __init__(
         self,
         vocab_size=30524,
+        max_position_embeddings=512,
         d_model=768,
         decoder_ff_dim=2048,
         nhead=12,
@@ -25,6 +26,7 @@ class GSumConfig(PretrainedConfig):
         super(GSumConfig, self).__init__(**kwargs)
 
         self.vocab_size = vocab_size
+        self.max_position_embeddings = max_position_embeddings
         self.d_model = d_model
         self.decoder_ff_dim = decoder_ff_dim
         self.nhead = nhead
@@ -42,6 +44,7 @@ class GSumConfig(PretrainedConfig):
     def to_dict(self):
         return {
             "vocab_size": self.vocab_size,
+            "max_position_embeddings": self.max_position_embeddings,
             "d_model": self.d_model,
             "decoder_ff_dim": self.decoder_ff_dim,
             "nhead": self.nhead,
