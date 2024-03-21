@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-python main.py \
+$HOME/pegasus-bridle/wrapper.sh python main.py \
     --wandb_project gsum_test \
     --accelerator gpu \
     --log_step 16 \
