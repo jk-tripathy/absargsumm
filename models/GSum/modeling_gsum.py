@@ -136,63 +136,36 @@ class GSumDecoderLayer(nn.Module):
             dropout=self.config.dropout,
             batch_first=self.config.batch_first,
         )
-        self.first_multihead_attn = MultiheadAttention(
+        self.guidance_multihead_attn = MultiheadAttention(
             self.config.d_model,
             self.config.nhead,
             dropout=self.config.dropout,
             batch_first=self.config.batch_first,
         )
-        self.second_multihead_attn = MultiheadAttention(
+        self.source_multihead_attn = MultiheadAttention(
             self.config.d_model,
             self.config.nhead,
             dropout=self.config.dropout,
             batch_first=self.config.batch_first,
         )
 
-        self.norm1 = LayerNorm(self.config.d_model)
-        self.norm2 = LayerNorm(self.config.d_model)
-        self.norm3 = LayerNorm(self.config.d_model)
-        self.norm4 = LayerNorm(self.config.d_model)
+        self.dropout = Dropout(self.config.dropout)
+
+        self.norm1 = LayerNorm(self.config.d_model, eps=self.config.layer_norm_eps)
+        self.norm2 = LayerNorm(self.config.d_model, eps=self.config.layer_norm_eps)
+        self.norm3 = LayerNorm(self.config.d_model, eps=self.config.layer_norm_eps)
+        self.norm4 = LayerNorm(self.config.d_model, eps=self.config.layer_norm_eps)
 
         # Implementation of Feedforward model
         self.linear1 = Linear(self.config.d_model, self.config.decoder_ff_dim)
-        self.dropout = Dropout(self.config.dropout)
         self.linear2 = Linear(self.config.decoder_ff_dim, self.config.d_model)
 
         self.activation = F.relu
 
-    # self-attention block
-    def _sa_block(
-        self,
-        x: torch.Tensor,
-        attn_mask: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
-        out = self.self_attn(x, x, x, attn_mask=attn_mask, need_weights=False)[0]
-        return self.dropout(out) + x
-
-    # first multihead attention block
-    def _first_mha_block(
-        self,
-        x: torch.Tensor,
-        mem: torch.Tensor,
-        attn_mask: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
-        out = self.first_multihead_attn(x, mem, mem, attn_mask=attn_mask, need_weights=False)[0]
-        return self.dropout(out) + x
-
-    # second multihead attention block
-    def _second_mha_block(
-        self,
-        x: torch.Tensor,
-        mem: torch.Tensor,
-        attn_mask: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
-        out = self.second_multihead_attn(x, mem, mem, attn_mask=attn_mask, need_weights=False)[0]
-        return self.dropout(out) + x
-
     # feed forward block
     def _ff_block(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.activation(self.linear1(self.norm4(x)))
+        x = self.norm4(x)
+        x = self.activation(self.linear1(x))
         x = self.dropout(x)
         x = self.linear2(x)
         x = self.dropout(x)
@@ -208,11 +181,24 @@ class GSumDecoderLayer(nn.Module):
         target_attentions: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> torch.Tensor:
-        x = self.norm1(target_embeds + self._sa_block(target_embeds, target_attentions))
-        x = self.norm2(x + self._first_mha_block(x, guidance_logits, guidance_attentions))
-        x = self.norm3(x + self._second_mha_block(x, source_logits, source_attentions))
-        x = self._ff_block(x)
-        return x
+        x = self.norm1(target_embeds)
+        self_attn_out, _ = self.self_attn(x, x, x, attn_mask=target_attentions)
+        x = self.dropout(self_attn_out) + x
+        x = self.norm2(x)
+
+        guidance_multihead_attn_out, _ = self.guidance_multihead_attn(
+            guidance_logits, guidance_logits, x, attn_mask=guidance_attentions
+        )
+        x = self.dropout(guidance_multihead_attn_out) + x
+        x = self.norm3(x)
+
+        source_multihead_attn_out, _ = self.source_multihead_attn(
+            source_logits, source_logits, x, attn_mask=source_attentions
+        )
+        x = self.dropout(source_multihead_attn_out) + x
+
+        out = self._ff_block(x)
+        return out
 
 
 class GSumDecoder(nn.Module):
@@ -261,8 +247,7 @@ class GSumDecoder(nn.Module):
                 dtype=torch.float32,
                 device=target_attentions.device,
             )
-        else:
-            target_attentions = None
+
         target_embeds = self.embedding(target_input_ids) + self.embed_positions(target_input_ids)
         for layer in self.layers:
             x = layer(
