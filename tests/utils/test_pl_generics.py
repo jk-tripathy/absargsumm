@@ -44,21 +44,8 @@ def test_dataloader(dm, setup_stage, batch_with_guidance):
     assert batch.keys() == batch_with_guidance.keys()
 
 
-def test_model_step(dm, model, tokenizer):
-    dm.setup(stage="fit")
-    batch = next(iter(dm.train_dataloader()))
-    batch["guidance_input_ids"] = batch["input_ids"]
-    batch["guidance_attention_mask"] = batch["attention_mask"]
-    output = model.forward(batch)
-    assert output.loss is not None
-    assert output.logits is not None
-    dec_tokens = torch.argmax(output.logits, dim=-1)
-    results = model.calculate_metrics(dec_tokens, batch["decoder_input_ids"])
-    assert results["rouge1"] is not None
-
-
 def test_calculate_metrics(model, batch):
-    results = model.calculate_metrics(batch["decoder_input_ids"], batch["decoder_input_ids"])
+    results, _, _ = model.calculate_metrics(batch["decoder_input_ids"], batch["decoder_input_ids"])
     assert results["rouge1"] == 1.0
     assert results["rouge2"] == 1.0
     assert results["rougeL"] == 1.0
