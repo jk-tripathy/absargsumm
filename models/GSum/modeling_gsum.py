@@ -290,7 +290,9 @@ class GSum(PreTrainedModel):
         **kwargs,
     ):
         if decoder_input_ids is None and decoder_input_embeds is None:
-            decoder_input_ids = shift_tokens_right(input_ids, 0, self.config.bos_token_id)
+            decoder_input_ids = shift_tokens_right(
+                input_ids, self.config.pad_token_id, self.config.bos_token_id
+            )
 
         encoder_output = self.encoder(
             input_ids=input_ids,
