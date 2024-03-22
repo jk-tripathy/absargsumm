@@ -220,7 +220,7 @@ class GSumDecoder(nn.Module):
         self.layers = nn.ModuleList(
             [self.decoder_layer for _ in range(self.config.num_decoder_layers)]
         )
-        self.norm = LayerNorm(self.config.d_model)
+        self.norm = LayerNorm(self.config.d_model, eps=self.config.layer_norm_eps)
 
     def forward(
         self,
@@ -249,6 +249,7 @@ class GSumDecoder(nn.Module):
             )
 
         target_embeds = self.embedding(target_input_ids) + self.embed_positions(target_input_ids)
+        x = None
         for layer in self.layers:
             x = layer(
                 source_logits=source_logits,
