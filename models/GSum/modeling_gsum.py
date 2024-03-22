@@ -90,11 +90,13 @@ class GSumEncoder(nn.Module):
         guidance_attention_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> GSumEncoderBaseModelOutput:
-        expanded_attention_mask = create_masks(
-            attention_mask, expand_dims=True, num_attention_heads=self.config.nhead
+        source_attentions = _prepare_4d_attention_mask(
+            mask=attention_mask,
+            dtype=torch.float32,
         )
-        expanded_guidance_attention_mask = create_masks(
-            guidance_attention_mask, expand_dims=True, num_attention_heads=self.config.nhead
+        guidance_attentions = _prepare_4d_attention_mask(
+            mask=guidance_attention_mask,
+            dtype=torch.float32,
         )
 
         source_encoder_output = self.pretrained_hf_encoder(
@@ -103,7 +105,6 @@ class GSumEncoder(nn.Module):
         )
         source_logits = self.source_transformer_layer(
             source_encoder_output.last_hidden_state,
-            src_mask=expanded_attention_mask,
         )
         guidance_encoder_output = self.pretrained_hf_encoder(
             guidance_input_ids,
@@ -111,13 +112,12 @@ class GSumEncoder(nn.Module):
         )
         guidance_logits = self.guidance_transformer_layer(
             guidance_encoder_output.last_hidden_state,
-            src_mask=expanded_guidance_attention_mask,
         )
         return GSumEncoderBaseModelOutput(
             source_last_hidden_state=source_logits,
             guidance_last_hidden_state=guidance_logits,
-            source_3D_attentions=expanded_attention_mask,
-            guidance_3D_attentions=expanded_guidance_attention_mask,
+            source_3D_attentions=source_attentions,
+            guidance_3D_attentions=guidance_attentions,
         )
 
 
@@ -307,8 +307,10 @@ class GSum(PreTrainedModel):
             target_input_ids=decoder_input_ids,
             target_attentions=decoder_attention_mask,
         )
+        print(f"decoder_last_hidden_state: {decoder_last_hidden_state}")
 
         lm_logits = self.linear(decoder_last_hidden_state)
+        print(f"lm_logits: {lm_logits}")
 
         loss = self.loss(lm_logits.view(-1, self.config.vocab_size), decoder_input_ids.view(-1))
 
