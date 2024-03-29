@@ -150,7 +150,7 @@ class GenericModel(pl.LightningModule):
             new_table = Table(columns=self.train_table.columns, data=self.train_table.data)
             self.logger.experiment.log({"samples/train": new_table}, commit=False)
 
-        self.log("train/loss", model_output.loss, prog_bar=True, logger=True)
+        self.log("train/loss", model_output.loss.item(), prog_bar=True, logger=True)
         self.log("train/rouge1", results["rouge1"], prog_bar=True, logger=True)
         self.log("train/rouge2", results["rouge2"], prog_bar=True, logger=True)
         self.log("train/rougeL", results["rougeL"], prog_bar=True, logger=True)
@@ -180,7 +180,7 @@ class GenericModel(pl.LightningModule):
             new_table = Table(columns=self.val_table.columns, data=self.val_table.data)
             self.logger.experiment.log({"samples/val": new_table}, commit=False)
 
-        self.log("val/loss", model_output.loss, prog_bar=True, logger=True)
+        self.log("val/loss", model_output.loss.item(), prog_bar=True, logger=True)
         self.log("val/rouge1", results["rouge1"], prog_bar=True, logger=True)
         self.log("val/rouge2", results["rouge2"], prog_bar=True, logger=True)
         self.log("val/rougeL", results["rougeL"], prog_bar=True, logger=True)
@@ -196,7 +196,7 @@ class GenericModel(pl.LightningModule):
         results, refs, preds = self.calculate_metrics(
             argmax(model_output.logits, dim=-1), batch["decoder_input_ids"]
         )
-        self.log("test/loss", model_output.loss, prog_bar=True, logger=True)
+        self.log("test/loss", model_output.loss.item(), prog_bar=True, logger=True)
         self.log("test/rouge1", results["rouge1"], prog_bar=True, logger=True)
         self.log("test/rouge2", results["rouge2"], prog_bar=True, logger=True)
         self.log("test/rougeL", results["rougeL"], prog_bar=True, logger=True)
