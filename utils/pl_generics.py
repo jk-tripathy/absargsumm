@@ -1,4 +1,5 @@
 import lightning.pytorch as pl
+import nltk
 from evaluate import load
 from torch import argmax, optim
 from torch.utils.data import DataLoader
@@ -114,15 +115,20 @@ class GenericModel(pl.LightningModule):
         self.tokenizer = tokenizer
         self.train_table = Table(columns=["step", "loss", "guidance", "gold text", "pred text"])
         self.val_table = Table(columns=["step", "loss", "guidance", "gold text", "pred text"])
+        self.metric = load("rouge")
 
     def forward(self, batch):
         return self.model(**batch)
 
     def calculate_metrics(self, outputs, targets):
-        rouge_metric = load("rouge")
         refs = self.tokenizer.batch_decode(targets, skip_special_tokens=True)
         preds = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        results = rouge_metric.compute(predictions=preds, references=refs)
+
+        # rougeLSum expects newline after each sentence
+        refs = ["\n".join(nltk.sent_tokenize(ref)) for ref in refs]
+        preds = ["\n".join(nltk.sent_tokenize(pred)) for pred in preds]
+
+        results = self.metric.compute(predictions=preds, references=refs)
         return results, refs, preds
 
     def training_step(self, batch, batch_idx):
@@ -207,7 +213,7 @@ class GenericModel(pl.LightningModule):
         guidance_transformer_layer = self.model.encoder.guidance_transformer_layer.parameters()
         decoder_params = self.model.decoder.parameters()
 
-        optimizer = optim.Adam(
+        optimizer = optim.AdamW(
             [
                 {
                     "params": pretrained_encoder_params,
