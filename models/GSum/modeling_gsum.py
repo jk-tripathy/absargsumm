@@ -17,7 +17,7 @@ from transformers.modeling_outputs import ModelOutput
 
 from models.GSum import GSumConfig
 from models.pretrained_hf_encoder import PretrainedHFEncoder
-from utils import create_masks, shift_tokens_right
+from utils import shift_tokens_right
 
 
 @dataclass
@@ -215,10 +215,9 @@ class GSumDecoder(nn.Module):
             self.config.max_position_embeddings,
             self.config.d_model,
         )
-        self.decoder_layer = GSumDecoderLayer(self.config)
 
         self.layers = nn.ModuleList(
-            [self.decoder_layer for _ in range(self.config.num_decoder_layers)]
+            [GSumDecoderLayer(self.config) for _ in range(self.config.num_decoder_layers)]
         )
         self.norm = LayerNorm(self.config.d_model, eps=self.config.layer_norm_eps)
 
@@ -309,10 +308,8 @@ class GSum(PreTrainedModel):
             target_input_ids=decoder_input_ids,
             target_attentions=decoder_attention_mask,
         )
-        print(f"decoder_last_hidden_state: {decoder_last_hidden_state}")
 
         lm_logits = self.linear(decoder_last_hidden_state)
-        print(f"lm_logits: {lm_logits}")
 
         loss = self.loss(lm_logits.view(-1, self.config.vocab_size), decoder_input_ids.view(-1))
 
