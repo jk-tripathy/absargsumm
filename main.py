@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 
 import lightning.pytorch as pl
+import nltk
 import wandb
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import set_float32_matmul_precision
@@ -105,6 +106,8 @@ if __name__ == "__main__":
         print("Wandb API key not found")
         exit(1)
     wandb.login(key=api_key)
+
+    nltk.download("punkt")
 
     args = parser()
     train(args)
