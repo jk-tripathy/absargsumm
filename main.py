@@ -100,6 +100,7 @@ def test(args):
 
 
 if __name__ == "__main__":
+    pl.seed_everything(42)
     set_float32_matmul_precision("high")
     api_key = os.environ.get("WANDB_API_KEY")
     if api_key is None:

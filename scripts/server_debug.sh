@@ -8,8 +8,8 @@ $HOME/pegasus-bridle/wrapper.sh python main.py \
     --warmup_steps 100 \
     --dataset cnn_dailymail \
     --dataset_variant 3.0.0 \
-    --dataset_limit 1024 \
+    --dataset_limit 512 \
     --longtext_column article \
     --shorttext_column highlights \
     --guidance_type gsum \
-    --batch_size 8 \
+    --batch_size 4 \
