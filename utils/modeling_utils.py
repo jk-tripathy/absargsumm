@@ -50,7 +50,6 @@ def create_masks(
     expand_dims: bool = False,
     for_causal: bool = False,
     num_attention_heads: int = None,
-    decoder_attention_mask: Optional[torch.Tensor] = None,
 ) -> Union[Tuple[torch.Tensor, torch.Tensor], Tuple[torch.Tensor, None]]:
     # our mask is used to prevent the model from attending to the padding tokens
     # attention mask returned by the tokenizer is 0 for padding tokens and 1 for non-padding tokens

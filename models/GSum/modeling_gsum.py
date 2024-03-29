@@ -17,7 +17,7 @@ from transformers.modeling_outputs import ModelOutput
 
 from models.GSum import GSumConfig
 from models.pretrained_hf_encoder import PretrainedHFEncoder
-from utils import shift_tokens_right
+from utils import create_masks, shift_tokens_right
 
 
 @dataclass
@@ -90,13 +90,23 @@ class GSumEncoder(nn.Module):
         guidance_attention_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> GSumEncoderBaseModelOutput:
-        source_attentions = _prepare_4d_attention_mask(
-            mask=attention_mask,
-            dtype=torch.float32,
+        # source_attentions = _prepare_4d_attention_mask(
+        #     mask=attention_mask,
+        #     dtype=torch.float32,
+        # )
+        # guidance_attentions = _prepare_4d_attention_mask(
+        #     mask=guidance_attention_mask,
+        #     dtype=torch.float32,
+        # )
+        source_attentions = create_masks(
+            attention_mask,
+            expand_dims=True,
+            num_attention_heads=12,
         )
-        guidance_attentions = _prepare_4d_attention_mask(
-            mask=guidance_attention_mask,
-            dtype=torch.float32,
+        guidance_attentions = create_masks(
+            guidance_attention_mask,
+            expand_dims=True,
+            num_attention_heads=12,
         )
 
         source_encoder_output = self.pretrained_hf_encoder(
@@ -105,6 +115,7 @@ class GSumEncoder(nn.Module):
         )
         source_logits = self.source_transformer_layer(
             source_encoder_output.last_hidden_state,
+            src_mask=source_attentions,
         )
         guidance_encoder_output = self.pretrained_hf_encoder(
             guidance_input_ids,
@@ -112,6 +123,7 @@ class GSumEncoder(nn.Module):
         )
         guidance_logits = self.guidance_transformer_layer(
             guidance_encoder_output.last_hidden_state,
+            src_mask=guidance_attentions,
         )
         return GSumEncoderBaseModelOutput(
             source_last_hidden_state=source_logits,
@@ -187,13 +199,19 @@ class GSumDecoderLayer(nn.Module):
         x = self.norm2(x)
 
         guidance_multihead_attn_out, _ = self.guidance_multihead_attn(
-            guidance_logits, guidance_logits, x, attn_mask=guidance_attentions
+            query=x,
+            key=guidance_logits,
+            value=guidance_logits,
+            attn_mask=guidance_attentions,
         )
         x = self.dropout(guidance_multihead_attn_out) + x
         x = self.norm3(x)
 
         source_multihead_attn_out, _ = self.source_multihead_attn(
-            source_logits, source_logits, x, attn_mask=source_attentions
+            query=x,
+            key=source_logits,
+            value=source_logits,
+            attn_mask=source_attentions,
         )
         x = self.dropout(source_multihead_attn_out) + x
 
@@ -272,8 +290,9 @@ class GSum(PreTrainedModel):
         self.decoder = GSumDecoder(self.config)
 
         self.linear = nn.Linear(self.config.d_model, self.config.vocab_size)
+        self.softmax = nn.LogSoftmax(dim=-1)
 
-        self.loss = nn.CrossEntropyLoss(ignore_index=self.config.pad_token_id, reduction="sum")
+        self.criterion = nn.NLLLoss(ignore_index=self.config.pad_token_id, reduction="sum")
 
     def forward(
         self,
@@ -311,7 +330,9 @@ class GSum(PreTrainedModel):
 
         lm_logits = self.linear(decoder_last_hidden_state)
 
-        loss = self.loss(lm_logits.view(-1, self.config.vocab_size), decoder_input_ids.view(-1))
+        output = self.softmax(lm_logits)
+
+        loss = self.criterion(output.view(-1, self.config.vocab_size), decoder_input_ids.view(-1))
 
         return GSumSeq2SeqLMOutput(
             loss=loss,
