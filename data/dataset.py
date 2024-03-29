@@ -55,8 +55,8 @@ class GenericDataset(Dataset):
         example = self.dataset[idx]
 
         # add bos and eos tokens
-        article = f"{self.tokenizer.bos_token} {example[self.longtext_column]} {self.tokenizer.eos_token}"
-        abstract = f"{self.tokenizer.bos_token} {example[self.shorttext_column]} {self.tokenizer.eos_token}"
+        article = example[self.longtext_column]
+        abstract = example[self.shorttext_column]
 
         tokenized_input = self.tokenizer(
             article,
