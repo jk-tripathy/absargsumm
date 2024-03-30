@@ -11,6 +11,7 @@ root = pyrootutils.setup_root(
 
 from datasets import load_dataset
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from utils import GSumGuidance, parser
 
@@ -47,6 +48,22 @@ class GenericDataset(Dataset):
             split=split,
             trust_remote_code=True,
         )
+        dirty_samples = []
+        for idx, sample in tqdm(
+            enumerate(zip(self.dataset, self.guidance_dataset)),
+            total=len(self.dataset),
+            desc=f"Checking for empty samples in {split}",
+        ):
+            data, guidance = sample
+            if data["highlights"] == "" or data["article"] == "" or guidance["guidance"] == "":
+                dirty_samples.append(idx)
+
+        self.dataset = self.dataset.select(
+            (i for i in range(len(self.dataset)) if i not in set(dirty_samples))
+        )
+        self.guidance_dataset = self.guidance_dataset.select(
+            (i for i in range(len(self.guidance_dataset)) if i not in set(dirty_samples))
+        )
 
     def __len__(self):
         return len(self.dataset)
@@ -54,7 +71,6 @@ class GenericDataset(Dataset):
     def __getitem__(self, idx):
         example = self.dataset[idx]
 
-        # add bos and eos tokens
         article = example[self.longtext_column]
         abstract = example[self.shorttext_column]
 
@@ -64,7 +80,6 @@ class GenericDataset(Dataset):
             truncation=True,
             max_length=self.tokenizer.model_max_length,
             return_tensors="pt",
-            add_special_tokens=False,
         )
         tokenized_output = self.tokenizer(
             abstract,
@@ -72,7 +87,6 @@ class GenericDataset(Dataset):
             truncation=True,
             max_length=self.tokenizer.model_max_length,
             return_tensors="pt",
-            add_special_tokens=False,
         )
         ret_dict = {
             "input_ids": tokenized_input["input_ids"].flatten(),
@@ -89,7 +103,6 @@ class GenericDataset(Dataset):
                 truncation=True,
                 max_length=self.tokenizer.model_max_length,
                 return_tensors="pt",
-                add_special_tokens=False,
             )
             ret_dict["guidance_input_ids"] = tokenized_signal["input_ids"].flatten()
             ret_dict["guidance_attention_mask"] = tokenized_signal["attention_mask"].flatten()
