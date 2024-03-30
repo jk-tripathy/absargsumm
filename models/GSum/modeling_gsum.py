@@ -17,7 +17,7 @@ from transformers.modeling_outputs import ModelOutput
 
 from models.GSum import GSumConfig
 from models.pretrained_hf_encoder import PretrainedHFEncoder
-from utils import create_masks, shift_tokens_right
+from utils import create_masks, get_tokenizer, shift_tokens_right
 
 
 @dataclass
@@ -286,6 +286,12 @@ class GSum(PreTrainedModel):
         super(GSum, self).__init__(config)
         self.config = config
 
+        self.tokenizer = get_tokenizer(
+            model_name=config.pretrained_encoder_name_or_path,
+            bos_token=config.bos_token,
+            eos_token=config.eos_token,
+        )
+
         self.encoder = GSumEncoder(self.config)
         self.decoder = GSumDecoder(self.config)
 
@@ -333,6 +339,26 @@ class GSum(PreTrainedModel):
         output = self.softmax(lm_logits)
 
         loss = self.criterion(output.view(-1, self.config.vocab_size), decoder_input_ids.view(-1))
+
+        if torch.isnan(loss):
+            print(f"input_ids: {self.tokenizer.batch_decode(input_ids, skip_special_tokens=True)}")
+            print(
+                f"guidance_input_ids: {self.tokenizer.batch_decode(guidance_input_ids, skip_special_tokens=True)}"
+            )
+            print(
+                f"decoder_input_ids: {self.tokenizer.batch_decode(decoder_input_ids, skip_special_tokens=True)}"
+            )
+            print(
+                f"encoder_output.source_last_hidden_state: {encoder_output.source_last_hidden_state}"
+            )
+            print(
+                f"encoder_output.guidance_last_hidden_state: {encoder_output.guidance_last_hidden_state}"
+            )
+            print(f"decoder_last_hidden_state: {decoder_last_hidden_state}")
+            print(f"lm_logits: {lm_logits}")
+            print(f"output: {output}")
+            print(f"loss: {loss}")
+            exit()
 
         return GSumSeq2SeqLMOutput(
             loss=loss,
