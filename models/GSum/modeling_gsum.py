@@ -298,7 +298,7 @@ class GSum(PreTrainedModel):
         self.linear = nn.Linear(self.config.d_model, self.config.vocab_size)
         self.softmax = nn.LogSoftmax(dim=-1)
 
-        self.criterion = nn.NLLLoss(ignore_index=self.config.pad_token_id, reduction="sum")
+        self.criterion = nn.NLLLoss(ignore_index=self.config.pad_token_id)
 
     def forward(
         self,

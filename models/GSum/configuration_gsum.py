@@ -14,7 +14,7 @@ class GSumConfig(PretrainedConfig):
         num_decoder_layers=12,
         batch_first=True,
         pretrained_encoder_name_or_path="bert-base-cased",
-        freeze_encoder=True,
+        freeze_encoder=False,
         dropout=0.2,
         layer_norm_eps=1e-6,
         encoder_learning_rate=0.002,
