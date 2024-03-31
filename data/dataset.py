@@ -31,6 +31,14 @@ class GenericDataset(Dataset):
         self.tokenizer = tokenizer
         self.longtext_column = longtext_column
         self.shorttext_column = shorttext_column
+        self.dataset = load_dataset(
+            dataset,
+            name=dataset_variant,
+            split=split,
+            trust_remote_code=True,
+        )
+
+        dirty_samples = []
         if guidance_type != "none":
             guidance_datafiles = {
                 "train": f"processed_guidance/{dataset}_{guidance_type}_guidance/train/train.arrow",
@@ -40,29 +48,32 @@ class GenericDataset(Dataset):
             self.guidance_dataset = load_dataset(
                 "arrow", data_files=guidance_datafiles, split=split
             )
+            for idx, sample in tqdm(
+                enumerate(zip(self.dataset, self.guidance_dataset)),
+                total=len(self.dataset),
+                desc=f"Checking for empty samples in {split}",
+            ):
+                data, guidance = sample
+                if (
+                    data[self.longtext_column] == ""
+                    or data[self.shorttext_column] == ""
+                    or guidance["guidance"] == ""
+                ):
+                    dirty_samples.append(idx)
+            self.guidance_dataset = self.guidance_dataset.select(
+                (i for i in range(len(self.guidance_dataset)) if i not in set(dirty_samples))
+            )
         else:
             self.guidance_dataset = None
-        self.dataset = load_dataset(
-            dataset,
-            name=dataset_variant,
-            split=split,
-            trust_remote_code=True,
-        )
-        dirty_samples = []
-        for idx, sample in tqdm(
-            enumerate(zip(self.dataset, self.guidance_dataset)),
-            total=len(self.dataset),
-            desc=f"Checking for empty samples in {split}",
-        ):
-            data, guidance = sample
-            if data["highlights"] == "" or data["article"] == "" or guidance["guidance"] == "":
-                dirty_samples.append(idx)
+            for idx, data in tqdm(
+                enumerate(self.dataset),
+                desc=f"Checking for empty samples in {split}",
+            ):
+                if data[self.longtext_column] == "" or data[self.shorttext_column] == "":
+                    dirty_samples.append(idx)
 
         self.dataset = self.dataset.select(
             (i for i in range(len(self.dataset)) if i not in set(dirty_samples))
-        )
-        self.guidance_dataset = self.guidance_dataset.select(
-            (i for i in range(len(self.guidance_dataset)) if i not in set(dirty_samples))
         )
 
     def __len__(self):
