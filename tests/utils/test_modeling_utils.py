@@ -43,11 +43,11 @@ def test_tokenizer_for_generation(tokenizer):
         add_special_tokens=False,
     ).input_ids
     assert input_ids.tolist() == [
-        [tokenizer.bos_token_id, 7592, tokenizer.eos_token_id, 0, 0, 0, 0, 0]
+        [tokenizer.bos_token_id, 8667, tokenizer.eos_token_id, 0, 0, 0, 0, 0]
     ]
     decoder_input_ids = shift_tokens_right(
         input_ids, tokenizer.pad_token_id, tokenizer.eos_token_id
     )
     assert decoder_input_ids.tolist() == [
-        [tokenizer.eos_token_id, tokenizer.bos_token_id, 7592, 0, 0, 0, 0, 0]
+        [tokenizer.eos_token_id, tokenizer.bos_token_id, 8667, 0, 0, 0, 0, 0]
     ]
