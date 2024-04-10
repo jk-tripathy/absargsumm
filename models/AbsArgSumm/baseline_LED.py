@@ -51,12 +51,10 @@ class BaselineLED:
         labels_ids[labels_ids == -100] = self.tokenizer.pad_token_id
         label_str = self.tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
 
-        rouge_output = self.rouge.compute(
-            predictions=pred_str, references=label_str, rouge_types=["rouge2"]
-        )["rouge2"].mid
+        rouge_output = self.rouge.compute(predictions=pred_str, references=label_str)
 
         return {
-            "rouge2_precision": round(rouge_output.precision, 4),
-            "rouge2_recall": round(rouge_output.recall, 4),
-            "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
+            "rouge1": round(rouge_output["rouge1"], 4),
+            "rouge2": round(rouge_output["rouge2"], 4),
+            "rougeL": round(rouge_output["rougeL"], 4),
         }
