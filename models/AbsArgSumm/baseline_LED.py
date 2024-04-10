@@ -1,37 +1,38 @@
-"""Checking the results of pretrained LED model on SciArg dataset as baseline.
-
-This experiment uses full text as input and the abstract as output.
-"""
-
-import pyrootutils
-
-root = pyrootutils.setup_root(
-    search_from=__file__,
-    indicator=".project-root",
-    project_root_env_var=True,
-    dotenv=True,
-    pythonpath=True,
-    cwd=True,
-)
-
 from evaluate import load
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from data import SciArg
+from utils import get_tokenizer
 
 
-class BaselineLED:
-    def __init__(self):
+class LEDModel:
+    def __init__(self, experiment="baseline"):
+        self.experiment = experiment
         self.model_name = "allenai/led-large-16384-arxiv"
         self.batch_size = 2
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.max_input_length = 8192
+        self.max_output_length = 512
+        self.rouge = load("rouge")
         self.model = AutoModelForSeq2SeqLM.from_pretrained(
             self.model_name,
             gradient_checkpointing=True,
             use_cache=False,
         )
-        self.rouge = load("rouge")
-        self.data = SciArg(self.tokenizer, batch_size=self.batch_size)
+        if experiment == "baseline" or experiment == "text_spans":
+            self.tokenizer = get_tokenizer(self.model_name)
+
+        elif experiment == "annotated_text":
+            special_tokens = ["<ADU>", "</ADU>"]
+            self.tokenizer = get_tokenizer(self.model_name, special_tokens=special_tokens)
+            self.model.resize_token_embeddings(len(self.tokenizer))
+
+        self.data = SciArg(
+            tokenizer=self.tokenizer,
+            experiment=self.experiment,
+            batch_size=self.batch_size,
+            max_input_length=self.max_input_length,
+            max_output_length=self.max_output_length,
+        )
 
         self._post_init()
 

@@ -6,6 +6,12 @@ def parser():
         description="Abstractive Summarization of Scientific Papers using Argumentative Structure",
     )
     parser.add_argument(
+        "--experiment",
+        type=str,
+        default="baseline",
+        help="AbsArgSumm experiment to run. Can be 'baseline', 'text_spans', 'annotated_text'. Defaults to 'baseline'.",
+    )
+    parser.add_argument(
         "--wandb_project",
         type=str,
         default=None,

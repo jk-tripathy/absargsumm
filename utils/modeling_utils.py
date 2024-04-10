@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import torch
 from transformers import AutoTokenizer, PreTrainedTokenizer
@@ -6,21 +6,11 @@ from transformers import AutoTokenizer, PreTrainedTokenizer
 
 def get_tokenizer(
     model_name: str,
-    bos_token: Optional[str] = None,
-    eos_token: Optional[str] = None,
+    special_tokens: Optional[List[str]] = None,
 ) -> PreTrainedTokenizer:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    if bos_token is not None and eos_token is not None:
-        pad_token = tokenizer.pad_token
-        special_tokens_dict = {
-            "bos_token": bos_token,
-            "eos_token": eos_token,
-            "pad_token": pad_token,
-        }
-        tokenizer.add_special_tokens(
-            special_tokens_dict,
-            replace_additional_special_tokens=True,
-        )
+    if special_tokens is not None:
+        tokenizer.add_special_tokens({"additional_special_tokens": special_tokens})
 
     return tokenizer
 

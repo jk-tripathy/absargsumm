@@ -21,7 +21,7 @@ from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
 
 from data import GenericDataModule
 from models import GenericModel
-from models.AbsArgSumm import BaselineLED
+from models.AbsArgSumm import LEDModel
 from models.GSum import GSum, GSumConfig
 from utils import get_tokenizer, parser
 
@@ -103,9 +103,9 @@ def test(args):
     trainer.test(model, dm)
 
 
-def experiment1():
-    os.environ["WANDB_PROJECT"] = "baseline-led"
-    run = BaselineLED()
+def AbsArgSummExperiments(experiment):
+    os.environ["WANDB_PROJECT"] = f"AbsArgSumm_{experiment}"
+    run = LEDModel(experiment=experiment)
     # enable fp16 apex training
     formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
     training_args = Seq2SeqTrainingArguments(
@@ -129,9 +129,11 @@ def experiment1():
         args=training_args,
         compute_metrics=run.compute_metrics,
         train_dataset=run.data.train_dataset,
-        eval_dataset=run.data.val_dataset,
+        eval_dataset=run.data.test_dataset,
+        test_dataset=run.data.test_dataset,
     )
     trainer.train()
+    trainer.test()
 
 
 if __name__ == "__main__":
@@ -146,4 +148,4 @@ if __name__ == "__main__":
     nltk.download("punkt")
 
     args = parser()
-    experiment1()
+    AbsArgSummExperiments(args.experiment)

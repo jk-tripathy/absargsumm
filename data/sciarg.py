@@ -1,24 +1,31 @@
-from xml.etree.ElementTree import ElementTree, fromstring
-
-from datasets import load_dataset
+# from datasets import load_dataset
+from pie_datasets import load_dataset
+from pie_modules.documents import (
+    TextDocumentWithLabeledSpansBinaryRelationsAndLabeledPartitions,
+)
 
 
 class SciArg:
-    def __init__(self, tokenizer, batch_size=2, max_input_length=8192, max_output_length=512):
+    def __init__(
+        self,
+        tokenizer,
+        experiment,
+        batch_size,
+        max_input_length,
+        max_output_length,
+    ):
+        self.experiment = experiment
         self.batch_size = batch_size
         self.max_input_length = max_input_length
         self.max_output_length = max_output_length
         self.tokenizer = tokenizer
 
-        self.dataset = load_dataset("DFKI-SLT/sciarg", split="train").train_test_split(
-            test_size=0.1
-        )
-        self.train_val_dataset, self.test_dataset = self.dataset["train"], self.dataset["test"]
-        self.train_val_dataset = self.train_val_dataset.train_test_split(test_size=0.02)
-        self.train_dataset, self.val_dataset = (
-            self.train_val_dataset["train"],
-            self.train_val_dataset["test"],
-        )
+        self.raw_dataset = load_dataset("pie/sciarg", split="train")
+        self.dataset = self.raw_dataset.to_document_type(
+            TextDocumentWithLabeledSpansBinaryRelationsAndLabeledPartitions
+        ).train_test_split(test_size=0.2)
+
+        self.train_dataset, self.test_dataset = self.dataset["train"], self.dataset["test"]
 
         self._post_init()
 
@@ -29,15 +36,6 @@ class SciArg:
             batch_size=self.batch_size,
         )
         self.train_dataset.set_format(
-            type="torch",
-            columns=["input_ids", "attention_mask", "global_attention_mask", "labels"],
-        )
-        self.val_dataset = self.val_dataset.map(
-            self._process_data_to_model_inputs,
-            batched=True,
-            batch_size=self.batch_size,
-        )
-        self.val_dataset.set_format(
             type="torch",
             columns=["input_ids", "attention_mask", "global_attention_mask", "labels"],
         )
@@ -55,31 +53,61 @@ class SciArg:
         full_text = []
         abstract = []
         for doc in batch:
-            text = doc
-            tree = ElementTree(fromstring(text))
-            root = tree.getroot()
             text = ""
             abs = ""
-            for child in root:
-                if child.tag == "Abstract":
-                    abs = child.text
-                elif child.tag.startswith("H"):
-                    for paragraph in child:
-                        text += paragraph.text
+            for partition in doc.labeled_partitions:
+                if partition.label == "Abstract":
+                    abs = str(partition)
+                else:
+                    text += str(partition)
             full_text.append(text)
             abstract.append(abs)
         return full_text, abstract
 
-    def _process_data_to_model_inputs(self, batch):
-        full_text, abstract = self._parse_xml(batch["text"])
+    def _parse_annotations(self, batch, full_texts, adu_start="<ADU>", adu_end="</ADU>"):
+        text_spans = []
+        annotated_full_texts = []
+        for full_text, doc in zip(full_texts, batch):
+            text_span = ""
+            annotated_full_text = full_text
+            seen_spans = set()
+            for annotation in doc.metadata["span_texts"]:
+                if len(annotation.split()) > 2 and annotation not in seen_spans:
+                    seen_spans.add(annotation)
+                    text_span += annotation + " "
+                    annotated_full_text = annotated_full_text.replace(
+                        annotation, adu_start + annotation + adu_end
+                    )
+            text_spans.append(text_span)
+            annotated_full_texts.append(annotated_full_text)
+        return text_spans, annotated_full_texts
 
-        # tokenize the inputs and labels
-        inputs = self.tokenizer(
-            full_text,
-            padding="max_length",
-            truncation=True,
-            max_length=self.max_input_length,
-        )
+    def _process_data_to_model_inputs(self, batch):
+        full_text, abstract = self._parse_xml(batch)
+        text_spans, annotated_full_texts = self._parse_annotations(batch, full_text)
+
+        if self.experiment == "baseline":
+            inputs = self.tokenizer(
+                full_text,
+                padding="max_length",
+                truncation=True,
+                max_length=self.max_input_length,
+            )
+        elif self.experiment == "text_spans":
+            inputs = self.tokenizer(
+                text_spans,
+                padding="max_length",
+                truncation=True,
+                max_length=self.max_input_length,
+            )
+        elif self.experiment == "annotated_text":
+            inputs = self.tokenizer(
+                annotated_full_texts,
+                padding="max_length",
+                truncation=True,
+                max_length=self.max_input_length,
+                add_special_tokens=True,
+            )
         outputs = self.tokenizer(
             abstract,
             padding="max_length",

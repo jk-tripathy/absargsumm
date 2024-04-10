@@ -1,1 +1,1 @@
-from models.AbsArgSumm.baseline_LED import BaselineLED
+from models.AbsArgSumm.baseline_LED import LEDModel
