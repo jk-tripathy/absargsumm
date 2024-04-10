@@ -14,11 +14,11 @@ from datetime import datetime
 
 import lightning.pytorch as pl
 import nltk
+import wandb
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import set_float32_matmul_precision
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
 
-import wandb
 from models.AbsArgSumm import BaselineLED
 from models.GSum import GSum, GSumConfig
 from utils import GenericDataModule, GenericModel, get_tokenizer, parser
@@ -118,7 +118,7 @@ def experiment1():
         save_steps=10,
         save_total_limit=2,
         gradient_accumulation_steps=4,
-        num_train_epochs=1,
+        num_train_epochs=100,
         report_to="wandb",
     )
     trainer = Seq2SeqTrainer(
