@@ -1,1 +1,2 @@
-from data.dataset import GenericDataset
+from data.generic_data import GenericDataModule, GenericDataset
+from data.sciarg import SciArg

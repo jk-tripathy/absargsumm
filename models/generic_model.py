@@ -2,98 +2,9 @@ import lightning.pytorch as pl
 import nltk
 from evaluate import load
 from torch import argmax, optim
-from torch.utils.data import DataLoader
 from transformers import get_inverse_sqrt_schedule
+
 from wandb import Table
-
-from data import GenericDataset
-
-
-class GenericDataModule(pl.LightningDataModule):
-    def __init__(
-        self,
-        dataset,
-        dataset_variant,
-        dataset_limit,
-        longtext_column,
-        shorttext_column,
-        batch_size,
-        tokenizer,
-        guidance_type,
-    ):
-        super().__init__()
-        self.dataset = dataset
-        self.dataset_variant = dataset_variant
-        self.dataset_limit = dataset_limit
-        self.longtext_column = longtext_column
-        self.shorttext_column = shorttext_column
-        self.batch_size = batch_size
-        self.tokenizer = tokenizer
-        self.guidance_type = guidance_type
-
-    def setup(self, stage: str):
-        """Setup the dataset for the given stage of the pipeline.
-
-        Args:
-            stage: Stage of the pipeline. Can be 'fit', 'validate', 'test', 'predict'
-            dataset_limit: Limit the number of samples in the dataset. Defaults to None.
-        """
-        if self.dataset_limit is not None:
-            train_limit_length = f"[:{self.dataset_limit}]"
-            val_test_limit_length = f"[:{self.dataset_limit//8}]"
-        else:
-            train_limit_length = ""
-            val_test_limit_length = ""
-
-        if stage == "fit" or stage is None:
-            self.train_dataset = GenericDataset(
-                dataset=self.dataset,
-                dataset_variant=self.dataset_variant,
-                longtext_column=self.longtext_column,
-                shorttext_column=self.shorttext_column,
-                split="train" + train_limit_length,
-                tokenizer=self.tokenizer,
-                guidance_type=self.guidance_type,
-            )
-            self.val_dataset = GenericDataset(
-                dataset=self.dataset,
-                dataset_variant=self.dataset_variant,
-                longtext_column=self.longtext_column,
-                shorttext_column=self.shorttext_column,
-                split="validation" + val_test_limit_length,
-                tokenizer=self.tokenizer,
-                guidance_type=self.guidance_type,
-            )
-
-        elif stage == "validate":
-            self.val_dataset = GenericDataset(
-                dataset=self.dataset,
-                dataset_variant=self.dataset_variant,
-                longtext_column=self.longtext_column,
-                shorttext_column=self.shorttext_column,
-                split="validation" + val_test_limit_length,
-                tokenizer=self.tokenizer,
-                guidance_type=self.guidance_type,
-            )
-        elif stage == "test":
-            self.test_dataset = GenericDataset(
-                dataset=self.dataset,
-                dataset_variant=self.dataset_variant,
-                longtext_column=self.longtext_column,
-                shorttext_column=self.shorttext_column,
-                split="test" + val_test_limit_length,
-                tokenizer=self.tokenizer,
-                guidance_type=self.guidance_type,
-            )
-
-    def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
-
-    def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
-
-    def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
 
 class GenericModel(pl.LightningModule):
