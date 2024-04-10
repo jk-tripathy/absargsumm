@@ -87,25 +87,13 @@ class GenericDataModule(pl.LightningDataModule):
             )
 
     def train_dataloader(self):
-        return DataLoader(
-            self.train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-        )
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(
-            self.val_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-        )
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
 
     def test_dataloader(self):
-        return DataLoader(
-            self.test_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-        )
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
 
 class GenericModel(pl.LightningModule):
