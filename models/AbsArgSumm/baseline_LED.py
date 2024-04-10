@@ -20,7 +20,6 @@ class LEDModel:
         )
         if experiment == "baseline" or experiment == "text_spans":
             self.tokenizer = get_tokenizer(self.model_name)
-
         elif experiment == "annotated_text":
             special_tokens = ["<ADU>", "</ADU>"]
             self.tokenizer = get_tokenizer(self.model_name, special_tokens=special_tokens)

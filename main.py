@@ -130,10 +130,9 @@ def AbsArgSummExperiments(experiment):
         compute_metrics=run.compute_metrics,
         train_dataset=run.data.train_dataset,
         eval_dataset=run.data.test_dataset,
-        test_dataset=run.data.test_dataset,
     )
     trainer.train()
-    trainer.test()
+    trainer.evaluate()
 
 
 if __name__ == "__main__":
