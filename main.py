@@ -19,9 +19,11 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import set_float32_matmul_precision
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
 
+from data import GenericDataModule
+from models import GenericModel
 from models.AbsArgSumm import BaselineLED
 from models.GSum import GSum, GSumConfig
-from utils import GenericDataModule, GenericModel, get_tokenizer, parser
+from utils import get_tokenizer, parser
 
 
 def train(args):
