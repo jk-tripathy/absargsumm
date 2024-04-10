@@ -6,20 +6,21 @@ from transformers import AutoTokenizer, PreTrainedTokenizer
 
 def get_tokenizer(
     model_name: str,
-    bos_token: str,
-    eos_token: str,
+    bos_token: Optional[str] = None,
+    eos_token: Optional[str] = None,
 ) -> PreTrainedTokenizer:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    pad_token = tokenizer.pad_token
-    special_tokens_dict = {
-        "bos_token": bos_token,
-        "eos_token": eos_token,
-        "pad_token": pad_token,
-    }
-    tokenizer.add_special_tokens(
-        special_tokens_dict,
-        replace_additional_special_tokens=True,
-    )
+    if bos_token is not None and eos_token is not None:
+        pad_token = tokenizer.pad_token
+        special_tokens_dict = {
+            "bos_token": bos_token,
+            "eos_token": eos_token,
+            "pad_token": pad_token,
+        }
+        tokenizer.add_special_tokens(
+            special_tokens_dict,
+            replace_additional_special_tokens=True,
+        )
 
     return tokenizer
 
