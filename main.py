@@ -109,18 +109,20 @@ def AbsArgSummExperiments(experiment):
     # enable fp16 apex training
     formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
     training_args = Seq2SeqTrainingArguments(
+        seed=42,
         predict_with_generate=True,
         evaluation_strategy="steps",
         per_device_train_batch_size=run.batch_size,
         per_device_eval_batch_size=run.batch_size,
         fp16=True,
-        output_dir=f"logs/{formatted_timedate}",
+        output_dir=f"logs/AbsArgSumm/{experiment}/{formatted_timedate}",
         logging_steps=5,
         eval_steps=10,
         save_steps=10,
         save_total_limit=2,
+        load_best_model_at_end=True,
         gradient_accumulation_steps=4,
-        num_train_epochs=100,
+        num_train_epochs=300,
         report_to="wandb",
     )
     trainer = Seq2SeqTrainer(
@@ -132,7 +134,6 @@ def AbsArgSummExperiments(experiment):
         eval_dataset=run.data.test_dataset,
     )
     trainer.train()
-    trainer.evaluate()
 
 
 if __name__ == "__main__":
