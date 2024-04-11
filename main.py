@@ -14,14 +14,14 @@ from datetime import datetime
 
 import lightning.pytorch as pl
 import nltk
-import wandb
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import set_float32_matmul_precision
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
 
+import wandb
 from data import GenericDataModule
 from models import GenericModel
-from models.AbsArgSumm import LEDModel
+from models.AbsArgSumm import AbsArgSumm
 from models.GSum import GSum, GSumConfig
 from utils import get_tokenizer, parser
 
@@ -103,9 +103,19 @@ def test(args):
     trainer.test(model, dm)
 
 
-def AbsArgSummExperiments(experiment):
-    os.environ["WANDB_PROJECT"] = f"AbsArgSumm_{experiment}"
-    run = LEDModel(experiment=experiment)
+def AbsArgSummExperiments(experiment: str, guided: bool):
+    """
+    Run experiments for AbsArgSumm
+    Args:
+        experiment (str): experiment to run. Can be one of ["baseline", "text_spans", "annotated_text"]
+        guided (bool): whether to use guided LED
+    """
+    if guided:
+        os.environ["WANDB_PROJECT"] = f"GuidedAbsArgSumm_{experiment}"
+    else:
+        os.environ["WANDB_PROJECT"] = f"AbsArgSumm_{experiment}"
+
+    run = AbsArgSumm(experiment=experiment, guided=guided)
     # enable fp16 apex training
     formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
     training_args = Seq2SeqTrainingArguments(
@@ -124,6 +134,8 @@ def AbsArgSummExperiments(experiment):
         gradient_accumulation_steps=4,
         num_train_epochs=300,
         report_to="wandb",
+        gradient_checkpointing=True,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
     )
     trainer = Seq2SeqTrainer(
         model=run.model,
@@ -148,4 +160,4 @@ if __name__ == "__main__":
     nltk.download("punkt")
 
     args = parser()
-    AbsArgSummExperiments(args.experiment)
+    AbsArgSummExperiments(experiment=args.experiment, guided=args.guided)

@@ -12,6 +12,12 @@ def parser():
         help="AbsArgSumm experiment to run. Can be 'baseline', 'text_spans', 'annotated_text'. Defaults to 'baseline'.",
     )
     parser.add_argument(
+        "--guided",
+        type=bool,
+        default=False,
+        help="Whether to use guided LED. Defaults to False.",
+    )
+    parser.add_argument(
         "--wandb_project",
         type=str,
         default=None,

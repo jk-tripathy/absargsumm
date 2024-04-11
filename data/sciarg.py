@@ -10,15 +10,17 @@ class SciArg:
         self,
         tokenizer,
         experiment,
+        guided,
         batch_size,
         max_input_length,
         max_output_length,
     ):
+        self.tokenizer = tokenizer
         self.experiment = experiment
+        self.guided = guided
         self.batch_size = batch_size
         self.max_input_length = max_input_length
         self.max_output_length = max_output_length
-        self.tokenizer = tokenizer
 
         self.raw_dataset = load_dataset("pie/sciarg", split="train")
         self.dataset = self.raw_dataset.to_document_type(
@@ -30,24 +32,68 @@ class SciArg:
         self._post_init()
 
     def _post_init(self):
-        self.train_dataset = self.train_dataset.map(
-            self._process_data_to_model_inputs,
-            batched=True,
-            batch_size=self.batch_size,
-        )
-        self.train_dataset.set_format(
-            type="torch",
-            columns=["input_ids", "attention_mask", "global_attention_mask", "labels"],
-        )
-        self.test_dataset = self.test_dataset.map(
-            self._process_data_to_model_inputs,
-            batched=True,
-            batch_size=self.batch_size,
-        )
-        self.test_dataset.set_format(
-            type="torch",
-            columns=["input_ids", "attention_mask", "global_attention_mask", "labels"],
-        )
+        if self.guided:
+            self.train_dataset = self.train_dataset.map(
+                self._process_guided_data_to_model_inputs,
+                batched=True,
+                batch_size=self.batch_size,
+            )
+            self.test_dataset = self.test_dataset.map(
+                self._process_guided_data_to_model_inputs,
+                batched=True,
+                batch_size=self.batch_size,
+            )
+            self.train_dataset.set_format(
+                type="torch",
+                columns=[
+                    "input_ids",
+                    "attention_mask",
+                    "guidance_input_ids",
+                    "guidance_attention_mask",
+                    "global_attention_mask",
+                    "labels",
+                ],
+            )
+            self.test_dataset.set_format(
+                type="torch",
+                columns=[
+                    "input_ids",
+                    "attention_mask",
+                    "guidance_input_ids",
+                    "guidance_attention_mask",
+                    "global_attention_mask",
+                    "labels",
+                ],
+            )
+        else:
+            self.train_dataset = self.train_dataset.map(
+                self._process_data_to_model_inputs,
+                batched=True,
+                batch_size=self.batch_size,
+            )
+            self.test_dataset = self.test_dataset.map(
+                self._process_data_to_model_inputs,
+                batched=True,
+                batch_size=self.batch_size,
+            )
+            self.train_dataset.set_format(
+                type="torch",
+                columns=[
+                    "input_ids",
+                    "attention_mask",
+                    "global_attention_mask",
+                    "labels",
+                ],
+            )
+            self.test_dataset.set_format(
+                type="torch",
+                columns=[
+                    "input_ids",
+                    "attention_mask",
+                    "global_attention_mask",
+                    "labels",
+                ],
+            )
 
     def _parse_xml(self, batch):
         full_text = []
@@ -108,6 +154,7 @@ class SciArg:
                 max_length=self.max_input_length,
                 add_special_tokens=True,
             )
+
         outputs = self.tokenizer(
             abstract,
             padding="max_length",
@@ -118,6 +165,63 @@ class SciArg:
         batch = {}
         batch["input_ids"] = inputs.input_ids
         batch["attention_mask"] = inputs.attention_mask
+
+        # create 0 global_attention_mask lists
+        batch["global_attention_mask"] = len(batch["input_ids"]) * [
+            [0 for _ in range(len(batch["input_ids"][0]))]
+        ]
+
+        # since above lists are references, the following line changes the 0 index for all samples
+        batch["global_attention_mask"][0][0] = 1
+        batch["labels"] = outputs.input_ids
+
+        # We have to make sure that the PAD token is ignored
+        batch["labels"] = [
+            [-100 if token == self.tokenizer.pad_token_id else token for token in labels]
+            for labels in batch["labels"]
+        ]
+
+        return batch
+
+    def _process_guided_data_to_model_inputs(self, batch):
+        full_text, abstract = self._parse_xml(batch)
+        text_spans, annotated_full_texts = self._parse_annotations(batch, full_text)
+
+        inputs = self.tokenizer(
+            full_text,
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_input_length,
+        )
+
+        if self.experiment == "text_spans":
+            guidance_inputs = self.tokenizer(
+                text_spans,
+                padding="max_length",
+                truncation=True,
+                max_length=self.max_input_length,
+            )
+        elif self.experiment == "annotated_text":
+            guidance_inputs = self.tokenizer(
+                annotated_full_texts,
+                padding="max_length",
+                truncation=True,
+                max_length=self.max_input_length,
+                add_special_tokens=True,
+            )
+
+        outputs = self.tokenizer(
+            abstract,
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_output_length,
+        )
+
+        batch = {}
+        batch["input_ids"] = inputs.input_ids
+        batch["attention_mask"] = inputs.attention_mask
+        batch["guidance_input_ids"] = guidance_inputs.input_ids
+        batch["guidance_attention_mask"] = guidance_inputs.attention_mask
 
         # create 0 global_attention_mask lists
         batch["global_attention_mask"] = len(batch["input_ids"]) * [

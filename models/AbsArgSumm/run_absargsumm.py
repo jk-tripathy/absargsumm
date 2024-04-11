@@ -1,5 +1,5 @@
 from evaluate import load
-from transformers import AutoModelForSeq2SeqLM
+from transformers import AutoConfig, AutoModelForSeq2SeqLM
 
 from data import SciArg
 from models.AbsArgSumm import GuidedLEDForConditionalGeneration
@@ -9,19 +9,20 @@ from utils import get_tokenizer
 class AbsArgSumm:
     def __init__(self, experiment="baseline", guided=False):
         self.experiment = experiment
+        self.guided = guided
         self.model_name = "allenai/led-large-16384-arxiv"
-        self.batch_size = 2
-        self.max_input_length = 8192
-        self.max_output_length = 512
+        self.batch_size = 1  # 2
+        self.max_input_length = 1024  # 8192
+        self.max_output_length = 16  # 512
         self.rouge = load("rouge")
         if guided:
             if experiment == "baseline":
                 raise ValueError("Guided LED not supported for baseline experiment")
 
-            self.model = GuidedLEDForConditionalGeneration.from_pretrained(
-                gradient_checkpointing=True,
-                use_cache=False,
-            )
+            config = AutoConfig.from_pretrained(self.model_name)
+            config.gradient_checkpointing = True
+            config.use_cache = False
+            self.model = GuidedLEDForConditionalGeneration(config)
         else:
             self.model = AutoModelForSeq2SeqLM.from_pretrained(
                 self.model_name,
@@ -38,6 +39,7 @@ class AbsArgSumm:
         self.data = SciArg(
             tokenizer=self.tokenizer,
             experiment=self.experiment,
+            guided=self.guided,
             batch_size=self.batch_size,
             max_input_length=self.max_input_length,
             max_output_length=self.max_output_length,
