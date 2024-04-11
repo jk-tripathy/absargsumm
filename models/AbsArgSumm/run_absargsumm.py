@@ -1,23 +1,33 @@
 from evaluate import load
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM
 
 from data import SciArg
+from models.AbsArgSumm import GuidedLEDForConditionalGeneration
 from utils import get_tokenizer
 
 
-class LEDModel:
-    def __init__(self, experiment="baseline"):
+class AbsArgSumm:
+    def __init__(self, experiment="baseline", guided=False):
         self.experiment = experiment
         self.model_name = "allenai/led-large-16384-arxiv"
         self.batch_size = 2
         self.max_input_length = 8192
         self.max_output_length = 512
         self.rouge = load("rouge")
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(
-            self.model_name,
-            gradient_checkpointing=True,
-            use_cache=False,
-        )
+        if guided:
+            if experiment == "baseline":
+                raise ValueError("Guided LED not supported for baseline experiment")
+
+            self.model = GuidedLEDForConditionalGeneration.from_pretrained(
+                gradient_checkpointing=True,
+                use_cache=False,
+            )
+        else:
+            self.model = AutoModelForSeq2SeqLM.from_pretrained(
+                self.model_name,
+                gradient_checkpointing=True,
+                use_cache=False,
+            )
         if experiment == "baseline" or experiment == "text_spans":
             self.tokenizer = get_tokenizer(self.model_name)
         elif experiment == "annotated_text":
