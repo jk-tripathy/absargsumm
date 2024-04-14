@@ -199,7 +199,9 @@ class SciArg:
 
     def _process_guided_data_to_model_inputs(self, batch):
         full_text, abstract = self._parse_xml(batch)
-        text_spans, annotated_full_texts = self._parse_annotations(batch, full_text)
+        text_spans, annotated_spans, annotated_full_texts = self._parse_annotations(
+            batch, full_text
+        )
 
         inputs = self.tokenizer(
             full_text,
@@ -214,6 +216,14 @@ class SciArg:
                 padding="max_length",
                 truncation=True,
                 max_length=self.max_input_length,
+            )
+        elif self.experiment == "annotated_spans":
+            guidance_inputs = self.tokenizer(
+                annotated_spans,
+                padding="max_length",
+                truncation=True,
+                max_length=self.max_input_length,
+                add_special_tokens=True,
             )
         elif self.experiment == "annotated_text":
             guidance_inputs = self.tokenizer(
