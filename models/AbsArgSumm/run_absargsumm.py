@@ -11,9 +11,9 @@ class AbsArgSumm:
         self.experiment = experiment
         self.guided = guided
         self.model_name = "allenai/led-large-16384-arxiv"
-        self.batch_size = 1  # 2
-        self.max_input_length = 1024  # 8192
-        self.max_output_length = 16  # 512
+        self.batch_size = 2
+        self.max_input_length = 8192
+        self.max_output_length = 512
         self.rouge = load("rouge")
         if guided:
             if experiment == "baseline":
@@ -31,7 +31,7 @@ class AbsArgSumm:
             )
         if experiment == "baseline" or experiment == "text_spans":
             self.tokenizer = get_tokenizer(self.model_name)
-        elif experiment == "annotated_text":
+        elif experiment == "annotated_text" or experiment == "annotated_spans":
             special_tokens = ["<ADU>", "</ADU>"]
             self.tokenizer = get_tokenizer(self.model_name, special_tokens=special_tokens)
             self.model.resize_token_embeddings(len(self.tokenizer))

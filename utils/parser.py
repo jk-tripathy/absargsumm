@@ -9,7 +9,7 @@ def parser():
         "--experiment",
         type=str,
         default="baseline",
-        help="AbsArgSumm experiment to run. Can be 'baseline', 'text_spans', 'annotated_text'. Defaults to 'baseline'.",
+        help="AbsArgSumm experiment to run. Can be 'baseline', 'text_spans', 'annotated_spans', 'annotated_text'. Defaults to 'baseline'.",
     )
     parser.add_argument(
         "--guided",

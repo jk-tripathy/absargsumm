@@ -112,25 +112,31 @@ class SciArg:
 
     def _parse_annotations(self, batch, full_texts, adu_start="<ADU>", adu_end="</ADU>"):
         text_spans = []
+        annotated_text_spans = []
         annotated_full_texts = []
         for full_text, doc in zip(full_texts, batch):
             text_span = ""
+            annotated_text_span = ""
             annotated_full_text = full_text
             seen_spans = set()
             for annotation in doc.metadata["span_texts"]:
                 if len(annotation.split()) > 2 and annotation not in seen_spans:
                     seen_spans.add(annotation)
                     text_span += annotation + " "
+                    annotated_text_span += adu_start + annotation + adu_end + " "
                     annotated_full_text = annotated_full_text.replace(
                         annotation, adu_start + annotation + adu_end
                     )
             text_spans.append(text_span)
+            annotated_text_spans.append(annotated_text_span)
             annotated_full_texts.append(annotated_full_text)
-        return text_spans, annotated_full_texts
+        return text_spans, annotated_text_spans, annotated_full_texts
 
     def _process_data_to_model_inputs(self, batch):
         full_text, abstract = self._parse_xml(batch)
-        text_spans, annotated_full_texts = self._parse_annotations(batch, full_text)
+        text_spans, annotated_spans, annotated_full_texts = self._parse_annotations(
+            batch, full_text
+        )
 
         if self.experiment == "baseline":
             inputs = self.tokenizer(
@@ -145,6 +151,14 @@ class SciArg:
                 padding="max_length",
                 truncation=True,
                 max_length=self.max_input_length,
+            )
+        elif self.experiment == "annotated_spans":
+            inputs = self.tokenizer(
+                annotated_spans,
+                padding="max_length",
+                truncation=True,
+                max_length=self.max_input_length,
+                add_special_tokens=True,
             )
         elif self.experiment == "annotated_text":
             inputs = self.tokenizer(
