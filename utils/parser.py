@@ -18,7 +18,7 @@ def parser():
         help="Whether to use guided LED. Defaults to False.",
     )
     parser.add_argument(
-        "--share_encoder",
+        "--shared_encoder",
         type=bool,
         default=False,
         help="Whether to share the encoder betweent the source and the guidance. Defaults to False.",

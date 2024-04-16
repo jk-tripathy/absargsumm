@@ -42,7 +42,7 @@ class GuidedLEDModel(LEDPreTrainedModel):
         self._copy_weights(self.pretrained_model.led.shared, self.shared)
         self._copy_weights(self.pretrained_model.led.decoder, self.decoder)
 
-        if config.share_encoder:
+        if config.shared_encoder:
             self._copy_weights(self.pretrained_model.led.encoder, self.encoder)
             self.guidance_encoder = self.encoder
         else:

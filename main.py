@@ -14,11 +14,11 @@ from datetime import datetime
 
 import lightning.pytorch as pl
 import nltk
+import wandb
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import set_float32_matmul_precision
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
 
-import wandb
 from data import GenericDataModule
 from models import GenericModel
 from models.AbsArgSumm import AbsArgSumm
@@ -103,21 +103,21 @@ def test(args):
     trainer.test(model, dm)
 
 
-def AbsArgSummExperiments(experiment: str, guided: bool, share_encoder: bool = False):
+def AbsArgSummExperiments(experiment: str, guided: bool, shared_encoder: bool = False):
     """
     Run experiments for AbsArgSumm
     Args:
         experiment (str): experiment to run. Can be one of ["baseline", "text_spans", "annotated_text"]
         guided (bool): whether to use guided LED
     """
-    if guided and not share_encoder:
+    if guided and not shared_encoder:
         os.environ["WANDB_PROJECT"] = f"GuidedAbsArgSumm_{experiment}"
-    elif guided and share_encoder:
+    elif guided and shared_encoder:
         os.environ["WANDB_PROJECT"] = f"SharedGuidedAbsArgSumm_{experiment}"
     else:
         os.environ["WANDB_PROJECT"] = f"AbsArgSumm_{experiment}"
 
-    run = AbsArgSumm(experiment=experiment, guided=guided, share_encoder=share_encoder)
+    run = AbsArgSumm(experiment=experiment, guided=guided, shared_encoder=shared_encoder)
     # enable fp16 apex training
     formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
     training_args = Seq2SeqTrainingArguments(
@@ -165,5 +165,5 @@ if __name__ == "__main__":
     AbsArgSummExperiments(
         experiment=args.experiment,
         guided=args.guided,
-        share_encoder=args.share_encoder,
+        shared_encoder=args.shared_encoder,
     )
