@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
-from transformers import AutoConfig, AutoModelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM
 from transformers.models.led.modeling_led import (
     LEDConfig,
     LEDDecoder,
@@ -40,9 +40,14 @@ class GuidedLEDModel(LEDPreTrainedModel):
         self.decoder = LEDDecoder(config, self.shared)
 
         self._copy_weights(self.pretrained_model.led.shared, self.shared)
-        self._copy_weights(self.pretrained_model.led.encoder, self.encoder)
-        self._copy_weights(self.pretrained_model.led.encoder, self.guidance_encoder)
         self._copy_weights(self.pretrained_model.led.decoder, self.decoder)
+
+        if config.share_encoder:
+            self._copy_weights(self.pretrained_model.led.encoder, self.encoder)
+            self.guidance_encoder = self.encoder
+        else:
+            self._copy_weights(self.pretrained_model.led.encoder, self.encoder)
+            self._copy_weights(self.pretrained_model.led.encoder, self.guidance_encoder)
 
         del self.pretrained_model
 

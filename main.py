@@ -103,19 +103,21 @@ def test(args):
     trainer.test(model, dm)
 
 
-def AbsArgSummExperiments(experiment: str, guided: bool):
+def AbsArgSummExperiments(experiment: str, guided: bool, share_encoder: bool = False):
     """
     Run experiments for AbsArgSumm
     Args:
         experiment (str): experiment to run. Can be one of ["baseline", "text_spans", "annotated_text"]
         guided (bool): whether to use guided LED
     """
-    if guided:
+    if guided and not share_encoder:
         os.environ["WANDB_PROJECT"] = f"GuidedAbsArgSumm_{experiment}"
+    elif guided and share_encoder:
+        os.environ["WANDB_PROJECT"] = f"SharedGuidedAbsArgSumm_{experiment}"
     else:
         os.environ["WANDB_PROJECT"] = f"AbsArgSumm_{experiment}"
 
-    run = AbsArgSumm(experiment=experiment, guided=guided)
+    run = AbsArgSumm(experiment=experiment, guided=guided, share_encoder=share_encoder)
     # enable fp16 apex training
     formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
     training_args = Seq2SeqTrainingArguments(
@@ -157,7 +159,11 @@ if __name__ == "__main__":
         exit(1)
     wandb.login(key=api_key)
 
-    nltk.download("punkt")
+    # nltk.download("punkt")
 
     args = parser()
-    AbsArgSummExperiments(experiment=args.experiment, guided=args.guided)
+    AbsArgSummExperiments(
+        experiment=args.experiment,
+        guided=args.guided,
+        share_encoder=args.share_encoder,
+    )

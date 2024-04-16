@@ -7,7 +7,7 @@ from utils import get_tokenizer
 
 
 class AbsArgSumm:
-    def __init__(self, experiment="baseline", guided=False):
+    def __init__(self, experiment="baseline", guided=False, share_encoder=False):
         self.experiment = experiment
         self.guided = guided
         self.model_name = "allenai/led-large-16384-arxiv"
@@ -22,6 +22,7 @@ class AbsArgSumm:
             config = AutoConfig.from_pretrained(self.model_name)
             config.gradient_checkpointing = True
             config.use_cache = False
+            config.share_encoder = share_encoder
             self.model = GuidedLEDForConditionalGeneration(config)
         else:
             self.model = AutoModelForSeq2SeqLM.from_pretrained(
