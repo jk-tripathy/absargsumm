@@ -132,7 +132,7 @@ class AbsArgSumm:
             "rougeL": round(rouge_output["rougeL"], 4),
         }
 
-    def multirun(self, num_runs=5):
+    def multirun(self, num_runs=3):
         multirun_results = {"average": {"rouge1": 0, "rouge2": 0, "rougeL": 0, "loss": 0}}
         for i in range(num_runs):
             # enable fp16 apex training
