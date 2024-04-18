@@ -37,7 +37,6 @@ class AbsArgSumm:
         elif experiment == "annotated_text" or experiment == "annotated_spans":
             special_tokens = ["<ADU>", "</ADU>"]
             self.tokenizer = get_tokenizer(self.model_name, special_tokens=special_tokens)
-            self.model.resize_token_embeddings(len(self.tokenizer))
 
         self.data = SciArg(
             tokenizer=self.tokenizer,
