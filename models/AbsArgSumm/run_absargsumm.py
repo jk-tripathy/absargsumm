@@ -14,7 +14,14 @@ from utils import get_tokenizer
 
 
 class AbsArgSumm:
-    def __init__(self, experiment="baseline", guided=False, shared_encoder=False, seed=42):
+    def __init__(
+        self,
+        experiment="baseline",
+        guided=False,
+        shared_encoder=False,
+        seed=42,
+        project_name="AbsArgSumm",
+    ):
         self.experiment = experiment
         self.guided = guided
         self.shared_encoder = shared_encoder
@@ -50,13 +57,13 @@ class AbsArgSumm:
             per_device_train_batch_size=self.batch_size,
             per_device_eval_batch_size=self.batch_size,
             fp16=True,
-            output_dir=f"logs/AbsArgSumm/{experiment}/{formatted_timedate}",
+            output_dir=f"logs/{project_name}/{formatted_timedate}",
             logging_steps=5,
             eval_steps=10,
             save_steps=10,
             save_total_limit=2,
             load_best_model_at_end=True,
-            best_model_metric="rougeL",
+            metric_for_best_model="rougeL",
             gradient_accumulation_steps=4,
             num_train_epochs=300,
             report_to="wandb",
@@ -98,6 +105,10 @@ class AbsArgSumm:
                 gradient_checkpointing=True,
                 use_cache=False,
             )
+
+        if self.experiment == "annotated_text" or self.experiment == "annotated_spans":
+            self.model.resize_token_embeddings(len(self.tokenizer))
+
         return self.model
 
     def train(self):

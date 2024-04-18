@@ -13,7 +13,6 @@ import os
 
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import ModelCheckpoint
-from torch import set_float32_matmul_precision
 
 import wandb
 from data import GenericDataModule
@@ -119,11 +118,13 @@ if __name__ == "__main__":
         project_name = f"Guided{project_name}"
     if args.shared_encoder:
         project_name = f"Shared{project_name}"
+    os.environ["WANDB_PROJECT"] = project_name
 
     run = AbsArgSumm(
         experiment=args.experiment,
         guided=args.guided,
         shared_encoder=args.shared_encoder,
+        project_name=project_name,
     )
     run.train()
     results = run.evaluate()
