@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from evaluate import load
@@ -19,17 +20,16 @@ class AbsArgSumm:
         experiment="baseline",
         guided=False,
         shared_encoder=False,
-        seed=42,
         project_name="AbsArgSumm",
     ):
         self.experiment = experiment
         self.guided = guided
         self.shared_encoder = shared_encoder
+        self.project_name = project_name
         self.model_name = "allenai/led-large-16384-arxiv"
         self.batch_size = 2
         self.max_input_length = 8192
         self.max_output_length = 512
-        self.seed = seed
         self.rouge = load("rouge")
 
         if experiment == "baseline" or experiment == "text_spans":
@@ -47,39 +47,6 @@ class AbsArgSumm:
             max_input_length=self.max_input_length,
             max_output_length=self.max_output_length,
         )
-
-        # enable fp16 apex training
-        formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        self.training_args = Seq2SeqTrainingArguments(
-            seed=self.seed,
-            predict_with_generate=True,
-            evaluation_strategy="steps",
-            per_device_train_batch_size=self.batch_size,
-            per_device_eval_batch_size=self.batch_size,
-            fp16=True,
-            output_dir=f"logs/{project_name}/{formatted_timedate}",
-            logging_steps=5,
-            eval_steps=10,
-            save_steps=10,
-            save_total_limit=2,
-            load_best_model_at_end=True,
-            metric_for_best_model="rougeL",
-            gradient_accumulation_steps=4,
-            num_train_epochs=300,
-            report_to="wandb",
-            gradient_checkpointing=True,
-            gradient_checkpointing_kwargs={"use_reentrant": False},
-        )
-        self.trainer = Seq2SeqTrainer(
-            model_init=self.model_init,
-            tokenizer=self.tokenizer,
-            args=self.training_args,
-            compute_metrics=self.compute_metrics,
-            train_dataset=self.data.train_dataset,
-            eval_dataset=self.data.test_dataset,
-        )
-
-        self._post_init()
 
     def _post_init(self):
         self.model.config.num_beams = 2
@@ -109,9 +76,41 @@ class AbsArgSumm:
         if self.experiment == "annotated_text" or self.experiment == "annotated_spans":
             self.model.resize_token_embeddings(len(self.tokenizer))
 
+        self._post_init()
+
         return self.model
 
     def train(self):
+        # enable fp16 apex training
+        self.formatted_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        self.training_args = Seq2SeqTrainingArguments(
+            predict_with_generate=True,
+            evaluation_strategy="steps",
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            fp16=True,
+            output_dir=f"logs/{self.project_name}/{self.formatted_datetime}",
+            logging_steps=5,
+            eval_steps=10,
+            save_steps=10,
+            save_total_limit=2,
+            load_best_model_at_end=True,
+            metric_for_best_model="rougeL",
+            gradient_accumulation_steps=4,
+            num_train_epochs=300,
+            report_to="wandb",
+            gradient_checkpointing=True,
+            gradient_checkpointing_kwargs={"use_reentrant": False},
+        )
+        self.trainer = Seq2SeqTrainer(
+            model_init=self.model_init,
+            tokenizer=self.tokenizer,
+            args=self.training_args,
+            compute_metrics=self.compute_metrics,
+            train_dataset=self.data.train_dataset,
+            eval_dataset=self.data.test_dataset,
+        )
+
         self.trainer.train()
 
     def evaluate(self):
@@ -133,3 +132,53 @@ class AbsArgSumm:
             "rouge2": round(rouge_output["rouge2"], 4),
             "rougeL": round(rouge_output["rougeL"], 4),
         }
+
+    def multirun(self, num_runs=5):
+        multirun_results = {"average": {"rouge1": 0, "rouge2": 0, "rougeL": 0, "loss": 0}}
+        for i in range(num_runs):
+            # enable fp16 apex training
+            self.formatted_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M")
+            self.training_args = Seq2SeqTrainingArguments(
+                seed=i,
+                predict_with_generate=True,
+                evaluation_strategy="steps",
+                per_device_train_batch_size=self.batch_size,
+                per_device_eval_batch_size=self.batch_size,
+                fp16=True,
+                output_dir=f"logs/{self.project_name}/{self.formatted_datetime}",
+                logging_steps=5,
+                eval_steps=10,
+                save_steps=10,
+                save_total_limit=2,
+                load_best_model_at_end=True,
+                metric_for_best_model="rougeL",
+                gradient_accumulation_steps=4,
+                num_train_epochs=300,
+                report_to="wandb",
+                gradient_checkpointing=True,
+                gradient_checkpointing_kwargs={"use_reentrant": False},
+            )
+            self.trainer = Seq2SeqTrainer(
+                model_init=self.model_init,
+                tokenizer=self.tokenizer,
+                args=self.training_args,
+                compute_metrics=self.compute_metrics,
+                train_dataset=self.data.train_dataset,
+                eval_dataset=self.data.test_dataset,
+            )
+            self.trainer.train()
+            eval_results = self.trainer.evaluate()
+
+            eval_results["output_dir"] = self.training_args.output_dir
+            multirun_results[f"run_{i+1}"] = eval_results
+            for metric in ["rouge1", "rouge2", "rougeL", "loss"]:
+                multirun_results["average"][metric] += eval_results[f"eval_{metric}"]
+
+        for metric in ["rouge1", "rouge2", "rougeL", "loss"]:
+            multirun_results["average"][metric] /= num_runs
+
+        multirun_file = f"logs/{self.project_name}/multirun_results_{self.formatted_datetime}.json"
+        with open(multirun_file, "w") as f:
+            json.dump(multirun_results, f)
+        print(f"Averaged Results: {multirun_results['average']}")
+        print(f"Multirun results saved to {multirun_file}")

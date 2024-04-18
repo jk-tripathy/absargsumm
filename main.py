@@ -126,6 +126,7 @@ if __name__ == "__main__":
         shared_encoder=args.shared_encoder,
         project_name=project_name,
     )
-    run.train()
-    results = run.evaluate()
-    print(results)
+    # run.train()
+    # results = run.evaluate()
+    # print(results)
+    run.multirun()
