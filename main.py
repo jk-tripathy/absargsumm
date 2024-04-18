@@ -10,14 +10,11 @@ root = pyrootutils.setup_root(
 )
 
 import os
-from datetime import datetime
 
 import lightning.pytorch as pl
-import nltk
 import wandb
 from lightning.pytorch.callbacks import ModelCheckpoint
 from torch import set_float32_matmul_precision
-from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
 
 from data import GenericDataModule
 from models import GenericModel
@@ -118,36 +115,9 @@ def AbsArgSummExperiments(experiment: str, guided: bool, shared_encoder: bool = 
         os.environ["WANDB_PROJECT"] = f"AbsArgSumm_{experiment}"
 
     run = AbsArgSumm(experiment=experiment, guided=guided, shared_encoder=shared_encoder)
-    # enable fp16 apex training
-    formatted_timedate = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    training_args = Seq2SeqTrainingArguments(
-        seed=42,
-        predict_with_generate=True,
-        evaluation_strategy="steps",
-        per_device_train_batch_size=run.batch_size,
-        per_device_eval_batch_size=run.batch_size,
-        fp16=True,
-        output_dir=f"logs/AbsArgSumm/{experiment}/{formatted_timedate}",
-        logging_steps=5,
-        eval_steps=10,
-        save_steps=10,
-        save_total_limit=2,
-        load_best_model_at_end=True,
-        gradient_accumulation_steps=4,
-        num_train_epochs=300,
-        report_to="wandb",
-        gradient_checkpointing=True,
-        gradient_checkpointing_kwargs={"use_reentrant": False},
-    )
-    trainer = Seq2SeqTrainer(
-        model=run.model,
-        tokenizer=run.tokenizer,
-        args=training_args,
-        compute_metrics=run.compute_metrics,
-        train_dataset=run.data.train_dataset,
-        eval_dataset=run.data.test_dataset,
-    )
-    trainer.train()
+    run.train()
+    results = run.evaluate()
+    print(results)
 
 
 if __name__ == "__main__":
