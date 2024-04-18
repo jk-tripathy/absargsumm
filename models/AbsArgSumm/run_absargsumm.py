@@ -17,6 +17,7 @@ class AbsArgSumm:
     def __init__(self, experiment="baseline", guided=False, shared_encoder=False, seed=42):
         self.experiment = experiment
         self.guided = guided
+        self.shared_encoder = shared_encoder
         self.model_name = "allenai/led-large-16384-arxiv"
         self.batch_size = 2
         self.max_input_length = 8192
@@ -24,21 +25,6 @@ class AbsArgSumm:
         self.seed = seed
         self.rouge = load("rouge")
 
-        if guided:
-            if experiment == "baseline":
-                raise ValueError("Guided LED not supported for baseline experiment")
-
-            config = AutoConfig.from_pretrained(self.model_name)
-            config.gradient_checkpointing = True
-            config.use_cache = False
-            config.shared_encoder = shared_encoder
-            self.model = GuidedLEDForConditionalGeneration(config)
-        else:
-            self.model = AutoModelForSeq2SeqLM.from_pretrained(
-                self.model_name,
-                gradient_checkpointing=True,
-                use_cache=False,
-            )
         if experiment == "baseline" or experiment == "text_spans":
             self.tokenizer = get_tokenizer(self.model_name)
         elif experiment == "annotated_text" or experiment == "annotated_spans":
@@ -70,6 +56,7 @@ class AbsArgSumm:
             save_steps=10,
             save_total_limit=2,
             load_best_model_at_end=True,
+            best_model_metric="rougeL",
             gradient_accumulation_steps=4,
             num_train_epochs=300,
             report_to="wandb",
@@ -77,7 +64,7 @@ class AbsArgSumm:
             gradient_checkpointing_kwargs={"use_reentrant": False},
         )
         self.trainer = Seq2SeqTrainer(
-            model=self.model,
+            model_init=self.model_init,
             tokenizer=self.tokenizer,
             args=self.training_args,
             compute_metrics=self.compute_metrics,
@@ -94,6 +81,24 @@ class AbsArgSumm:
         self.model.config.length_penalty = 2.0
         self.model.config.early_stopping = True
         self.model.config.no_repeat_ngram_size = 3
+
+    def model_init(self):
+        if self.guided:
+            if self.experiment == "baseline":
+                raise ValueError("Guided LED not supported for baseline experiment")
+
+            config = AutoConfig.from_pretrained(self.model_name)
+            config.gradient_checkpointing = True
+            config.use_cache = False
+            config.shared_encoder = self.shared_encoder
+            self.model = GuidedLEDForConditionalGeneration(config)
+        else:
+            self.model = AutoModelForSeq2SeqLM.from_pretrained(
+                self.model_name,
+                gradient_checkpointing=True,
+                use_cache=False,
+            )
+        return self.model
 
     def train(self):
         self.trainer.train()
