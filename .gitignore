@@ -3,6 +3,7 @@ saved_models
 
 # log dir
 logs
+wandb
 
 # HF cache
 huggingface
