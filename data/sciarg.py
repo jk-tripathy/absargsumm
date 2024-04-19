@@ -1,8 +1,23 @@
-# from datasets import load_dataset
+import pyrootutils
+
+root = pyrootutils.setup_root(
+    search_from=__file__,
+    indicator=".project-root",
+    project_root_env_var=True,
+    dotenv=True,
+    pythonpath=True,
+    cwd=True,
+)
+
+import json
+from statistics import mean, median, stdev
+
 from pie_datasets import load_dataset
 from pie_modules.documents import (
     TextDocumentWithLabeledSpansBinaryRelationsAndLabeledPartitions,
 )
+
+from utils import get_tokenizer
 
 
 class SciArg:
@@ -14,6 +29,7 @@ class SciArg:
         batch_size,
         max_input_length,
         max_output_length,
+        doEDA=False,
     ):
         self.tokenizer = tokenizer
         self.experiment = experiment
@@ -29,7 +45,66 @@ class SciArg:
 
         self.train_dataset, self.test_dataset = self.dataset["train"], self.dataset["test"]
 
-        self._post_init()
+        if doEDA:
+            self._eda()
+        else:
+            self._post_init()
+
+    def _eda(self):
+        self.eda = {"train": {}, "test": {}}
+
+        def helper(len_list):
+            return {
+                "min": min(len_list),
+                "max": max(len_list),
+                "mean": round(mean(len_list), 2),
+                "median": median(len_list),
+                "std": round(stdev(len_list), 2),
+            }
+
+        full_text_lens = []
+        abstract_lens = []
+        text_spans_lens = []
+        annotated_spans_lens = []
+        annotated_full_texts_lens = []
+        for x in self.train_dataset:
+            full_text, abstract = self._parse_xml([x])
+            text_spans, annotated_spans, annotated_full_texts = self._parse_annotations(
+                [x], full_text
+            )
+            full_text_lens.append(len(full_text[0].split()))
+            abstract_lens.append(len(abstract[0].split()))
+            text_spans_lens.append(len(text_spans[0].split()))
+            annotated_spans_lens.append(len(annotated_spans[0].split()))
+            annotated_full_texts_lens.append(len(annotated_full_texts[0].split()))
+
+        self.eda["train"]["full_text"] = helper(full_text_lens)
+        self.eda["train"]["abstract"] = helper(abstract_lens)
+        self.eda["train"]["text_spans"] = helper(text_spans_lens)
+        self.eda["train"]["annotated_spans"] = helper(annotated_spans_lens)
+        self.eda["train"]["annotated_full_texts"] = helper(annotated_full_texts_lens)
+
+        full_text_lens = []
+        abstract_lens = []
+        text_spans_lens = []
+        annotated_spans_lens = []
+        annotated_full_texts_lens = []
+        for x in self.test_dataset:
+            full_text, abstract = self._parse_xml([x])
+            text_spans, annotated_spans, annotated_full_texts = self._parse_annotations(
+                [x], full_text
+            )
+            full_text_lens.append(len(full_text[0].split()))
+            abstract_lens.append(len(abstract[0].split()))
+            text_spans_lens.append(len(text_spans[0].split()))
+            annotated_spans_lens.append(len(annotated_spans[0].split()))
+            annotated_full_texts_lens.append(len(annotated_full_texts[0].split()))
+
+        self.eda["test"]["full_text"] = helper(full_text_lens)
+        self.eda["test"]["abstract"] = helper(abstract_lens)
+        self.eda["test"]["text_spans"] = helper(text_spans_lens)
+        self.eda["test"]["annotated_spans"] = helper(annotated_spans_lens)
+        self.eda["test"]["annotated_full_texts"] = helper(annotated_full_texts_lens)
 
     def _post_init(self):
         if self.guided:
@@ -123,7 +198,7 @@ class SciArg:
                 if len(annotation.split()) > 2 and annotation not in seen_spans:
                     seen_spans.add(annotation)
                     text_span += annotation + " "
-                    annotated_text_span += adu_start + annotation + adu_end + " "
+                    annotated_text_span += adu_start + " " + annotation + " " + adu_end + " "
                     annotated_full_text = annotated_full_text.replace(
                         annotation, adu_start + annotation + adu_end
                     )
@@ -263,3 +338,17 @@ class SciArg:
         ]
 
         return batch
+
+
+if __name__ == "__main__":
+    tokenizer = get_tokenizer(model_name="allenai/led-large-16384-arxiv")
+    dataset = SciArg(
+        tokenizer=tokenizer,
+        experiment="baseline",
+        guided=False,
+        batch_size=2,
+        max_input_length=8195,
+        max_output_length=512,
+        doEDA=True,
+    )
+    print(json.dumps(dataset.eda, indent=4))
