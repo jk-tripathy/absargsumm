@@ -10,7 +10,7 @@ from transformers import (
 )
 
 from data import SciArg
-from models.AbsArgSumm import GuidedLEDForConditionalGeneration
+from models.absargsumm import GuidedLEDForConditionalGeneration
 from utils import get_tokenizer
 
 

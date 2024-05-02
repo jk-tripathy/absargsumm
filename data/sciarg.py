@@ -58,7 +58,6 @@ class SciArg:
                 "min": min(len_list),
                 "max": max(len_list),
                 "mean": round(mean(len_list), 2),
-                "median": median(len_list),
                 "std": round(stdev(len_list), 2),
             }
 
@@ -200,7 +199,7 @@ class SciArg:
                     text_span += annotation + " "
                     annotated_text_span += adu_start + " " + annotation + " " + adu_end + " "
                     annotated_full_text = annotated_full_text.replace(
-                        annotation, adu_start + annotation + adu_end
+                        annotation, adu_start + " " + annotation + adu_end + " "
                     )
             text_spans.append(text_span)
             annotated_text_spans.append(annotated_text_span)

@@ -1,2 +1,0 @@
-from models.generic_model import GenericModel
-from models.pretrained_hf_encoder import PretrainedHFEncoder
